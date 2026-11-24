@@ -1,0 +1,179 @@
+name: Sedaro Model Exchange index propagation - isolated
+on:
+  push:
+    branches: [experiment/sedaro-index-propagation-20261124]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: sedaro/model-exchange
+          ref: 7c03c2044d24ab091ee6e510dba4b84a7f055506
+          path: modex
+          persist-credentials: false
+      - name: Pin source and create separate test-only harness
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../receipts tests
+          git rev-parse HEAD | tee ../receipts/source.txt
+          test "$(git rev-parse HEAD)" = 7c03c2044d24ab091ee6e510dba4b84a7f055506
+          test "$(git hash-object src/model/sedaroml.rs)" = 9ed6cfd6606605a0db2b19be69d177a956bd512e
+          test "$(git hash-object src/exchange.rs)" = db6f8613c39506c224363f538a753191aac2d1a3
+          test "$(git hash-object src/nodes/sedaroml.rs)" = f125b5cda87759b0fcbe3137b1262e7bcbcab0c0
+          git rev-parse HEAD^{tree} | tee ../receipts/tree.txt
+          rustc --version | tee ../receipts/rustc.txt
+          cargo --version | tee ../receipts/cargo.txt
+          python3 --version | tee ../receipts/python.txt
+          cat > tests/mathgraph_index_probe.rs <<'RS'
+          use modex::exchange::Exchange;
+          use modex::model::sedaroml::{Model, read_model, write_model};
+          use modex::nodes::{sedaroml::SedaroML, traits::Exchangeable};
+          use modex::translations::{Operation, Translation, TranslationError};
+          use serde_json::{json, from_value};
+          use std::sync::atomic::{AtomicUsize, Ordering};
+          use std::time::{Duration, Instant};
+          use std::thread::sleep;
+
+          fn pair() -> (Model, Model) {
+              let base = json!({"blocks":{"b1":{"id":"b1","type":"Battery"},"s1":{"id":"s1","type":"Sensor"}},
+                  "index":{"Subsystem":["Battery"],"Battery":["b1"],"Sensor":["s1"]}});
+              let mut revised = base.clone();
+              revised["index"]["Subsystem"] = json!(["Sensor"]);
+              (from_value(base).unwrap(), from_value(revised).unwrap())
+          }
+          fn query(m: &Model) -> String {
+              m.block_ids_of_type("Subsystem").unwrap()[0].clone()
+          }
+          #[test]
+          fn model_query_and_diff() {
+              let (before, after) = pair();
+              assert_eq!(query(&before), "b1");
+              assert_eq!(query(&after), "s1");
+              assert_eq!(before.blocks, after.blocks);
+              assert_eq!(before.root, after.root);
+              assert_ne!(before.index, after.index);
+              assert!(before.diff(&before).is_empty());
+              assert!(before.diff(&after).is_empty(), "expected historical index omission");
+              assert!(after.diff(&before).is_empty());
+              let mut root = before.clone();
+              root.root.insert("revision".into(), json!(1));
+              assert!(!before.diff(&root).is_empty());
+              let mut block = before.clone();
+              block.block_by_id_mut("b1").unwrap().insert("value".into(), json!(1));
+              assert!(!before.diff(&block).is_empty());
+              let mut unrelated = before.clone();
+              unrelated.index.insert("Unrelated".into(), vec!["s1".into()]);
+              assert_eq!(query(&before),query(&unrelated));
+              assert!(before.diff(&unrelated).is_empty());
+              println!("NATIVE_MODEL_WITNESS query=b1->s1 diff_empty=true reverse_empty=true controls=4/4");
+          }
+
+          static ROUNDS: AtomicUsize = AtomicUsize::new(0);
+          struct RoundLogger;
+          static LOGGER: RoundLogger = RoundLogger;
+          impl log::Log for RoundLogger {
+              fn enabled(&self, _: &log::Metadata<'_>) -> bool { true }
+              fn log(&self, rec: &log::Record<'_>) {
+                  let msg = rec.args().to_string();
+                  if msg.contains("Translation complete.") {
+                      ROUNDS.fetch_add(1, Ordering::SeqCst);
+                  }
+              }
+              fn flush(&self) {}
+          }
+          fn noop(_: &Model, _: &mut Model) -> Result<(), TranslationError> { Ok(()) }
+          fn apply_index(from: &Model, to: &mut Model) -> Result<(), TranslationError> {
+              let target = from.root.get("selection").unwrap().as_str().unwrap();
+              to.index.insert("Subsystem".into(), vec![target.to_string()]);
+              if from.root.get("force_write").unwrap().as_bool().unwrap() {
+                  to.root.insert("revision".into(), json!(1));
+              }
+              Ok(())
+          }
+          fn copy_query(from: &Model, to: &mut Model) -> Result<(), TranslationError> {
+              to.root.insert("selected".into(), json!(query(from)));
+              Ok(())
+          }
+          fn run_chain(force_write: bool) {
+              log::set_logger(&LOGGER).unwrap();
+              log::set_max_level(log::LevelFilter::Info);
+              let dir = tempfile::tempdir().unwrap();
+              let ap = dir.path().join("a.json").to_str().unwrap().to_owned();
+              let bp = dir.path().join("b.json").to_str().unwrap().to_owned();
+              let cp = dir.path().join("c.json").to_str().unwrap().to_owned();
+              let mut a = Model::new();
+              a.root.insert("selection".into(), json!("Sensor"));
+              a.root.insert("force_write".into(), json!(force_write));
+              let (mut b, _) = pair();
+              b.root.insert("revision".into(), json!(0));
+              let mut c = Model::new();
+              c.root.insert("selected".into(), json!("b1"));
+              write_model(&ap, &a).unwrap();
+              write_model(&bp, &b).unwrap();
+              write_model(&cp, &c).unwrap();
+              let an = SedaroML::new("A".into(), ap);
+              let bn = SedaroML::new("B".into(), bp.clone());
+              let cn = SedaroML::new("C".into(), cp.clone());
+              let exchange = Exchange::new(vec![
+                  Translation { from: an, to: bn.clone(), operations: vec![
+                      Operation { name: None, forward: apply_index, reverse: noop }
+                  ] },
+                  Translation { from: bn.clone(), to: cn, operations: vec![
+                      Operation { name: None, forward: copy_query, reverse: noop }
+                  ] },
+              ]);
+              exchange.trigger_watch_for_model("A".into());
+              let start = Instant::now();
+              while ROUNDS.load(Ordering::SeqCst) == 0 {
+                  assert!(start.elapsed() < Duration::from_secs(15), "round did not complete");
+                  sleep(Duration::from_millis(20));
+              }
+              let b_memory = query(bn.lock().unwrap().rep());
+              let b_disk = query(&read_model(&bp).unwrap());
+              let c_disk = read_model(&cp).unwrap().root.get("selected").unwrap().as_str().unwrap().to_owned();
+              let expected = if force_write { "s1" } else { "b1" };
+              assert_eq!(b_memory, "s1");
+              assert_eq!(b_disk, expected);
+              assert_eq!(c_disk, expected);
+              println!("NATIVE_CHAIN_WITNESS force_write={} round_complete=true B_memory={} B_disk={} C_disk={}",
+                  force_write,b_memory,b_disk,c_disk);
+              // Detached exchange/node worker threads are ended when this isolated test process exits.
+              // Keep its input directory alive until then.
+              std::mem::forget(dir);
+              drop(exchange);
+          }
+          #[test]
+          fn index_only_chain() { run_chain(false); }
+          #[test]
+          fn root_change_control() { run_chain(true); }
+          RS
+          cp tests/mathgraph_index_probe.rs ../receipts/
+      - name: Execute unchanged production Model and Exchange in Rust
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYO3_PYTHON="$(command -v python3)"
+          cargo test --test mathgraph_index_probe model_query_and_diff -- --exact --nocapture 2>&1 | tee ../receipts/model.log
+          grep -F 'NATIVE_MODEL_WITNESS query=b1->s1 diff_empty=true reverse_empty=true controls=4/4' ../receipts/model.log
+          cargo test --test mathgraph_index_probe index_only_chain -- --exact --nocapture 2>&1 | tee ../receipts/index-only.log
+          grep -F 'NATIVE_CHAIN_WITNESS force_write=false round_complete=true B_memory=s1 B_disk=b1 C_disk=b1' ../receipts/index-only.log
+          cargo test --test mathgraph_index_probe root_change_control -- --exact --nocapture 2>&1 | tee ../receipts/root-control.log
+          grep -F 'NATIVE_CHAIN_WITNESS force_write=true round_complete=true B_memory=s1 B_disk=s1 C_disk=s1' ../receipts/root-control.log
+          git diff --exit-code
+          git diff --cached --exit-code
+          cp Cargo.lock ../receipts/Cargo.lock
+          git rev-parse HEAD | tee ../receipts/final-source.txt
+          test "$(cat ../receipts/source.txt)" = "$(cat ../receipts/final-source.txt)"
+          echo 'NATIVE_WITNESS_CONFIRMED; owner index-mutation contract UNKNOWN; no production or operational claim' | tee ../receipts/result.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: modex-index-propagation-receipts
+          path: receipts/
