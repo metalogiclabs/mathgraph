@@ -1,0 +1,23 @@
+name: OSTk profile sample order audit
+on:
+  push:
+    branches: [experiment/ostk-profile-time-origin-20261124]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Recompile pinned native profile and qualify counterexample
+        run: python3 research/ostk-profile-time-origin-20261124/replay.py
+      - name: Preserve native receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ostk-profile-order-native-evidence
+          path: ostk-native-evidence/
+          if-no-files-found: error
+          retention-days: 90

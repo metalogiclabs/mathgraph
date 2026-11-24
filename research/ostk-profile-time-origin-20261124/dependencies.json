@@ -1,0 +1,77 @@
+[
+  {
+    "name": "open-space-toolkit-core-6.0.0-1.x86_64-devel.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-core/releases/download/6.0.0/open-space-toolkit-core-6.0.0-1.x86_64-devel.deb",
+    "sha256": "1889194bcd4b26d627e186ba919f941abb2c309b4ae8a2f6ca5e469cb02dd52d",
+    "size": 39728
+  },
+  {
+    "name": "open-space-toolkit-io-5.0.0-1.x86_64-devel.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-io/releases/download/5.0.0/open-space-toolkit-io-5.0.0-1.x86_64-devel.deb",
+    "sha256": "2b0ec1013f82b364219276ff1df22c5925d25f112bde0a5613a1f74ba6d9dec8",
+    "size": 16326
+  },
+  {
+    "name": "open-space-toolkit-mathematics-5.0.2-1.x86_64-devel.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-mathematics/releases/download/5.0.2/open-space-toolkit-mathematics-5.0.2-1.x86_64-devel.deb",
+    "sha256": "449c3af042031d34e3b46ac3a2e28cf06c6e45b6486c1c61bbdf18950990e8ec",
+    "size": 62110
+  },
+  {
+    "name": "open-space-toolkit-physics-15.0.0-1.x86_64-devel.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-physics/releases/download/15.0.0/open-space-toolkit-physics-15.0.0-1.x86_64-devel.deb",
+    "sha256": "0bc5446382eb8bd6bd19f8a8e0fd8ae55f269fbc9768012268de8f02c4d98896",
+    "size": 69788
+  },
+  {
+    "name": "open-space-toolkit-astrodynamics-18.0.1-1.x86_64-devel.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-astrodynamics/releases/download/18.0.1/open-space-toolkit-astrodynamics-18.0.1-1.x86_64-devel.deb",
+    "sha256": "49834697cd09683f4c99d3c7c77480f658a634ea3555c4ce1881e85c6d11ec03",
+    "size": 115434
+  },
+  {
+    "name": "open-space-toolkit-core-6.0.0-1.x86_64-runtime.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-core/releases/download/6.0.0/open-space-toolkit-core-6.0.0-1.x86_64-runtime.deb",
+    "published_digest": "sha256:2cdd1776b101b2a6d92070bed1a523fa5ffb4c34663019f334301f9f616ce910",
+    "sha256": "2cdd1776b101b2a6d92070bed1a523fa5ffb4c34663019f334301f9f616ce910",
+    "size": 701770
+  },
+  {
+    "name": "open-space-toolkit-io-5.0.0-1.x86_64-runtime.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-io/releases/download/5.0.0/open-space-toolkit-io-5.0.0-1.x86_64-runtime.deb",
+    "published_digest": "sha256:d376182affd82c810fa9a6b3e78b0cb873423da1ce8f6d1b511eb6214eed538f",
+    "sha256": "d376182affd82c810fa9a6b3e78b0cb873423da1ce8f6d1b511eb6214eed538f",
+    "size": 234026
+  },
+  {
+    "name": "open-space-toolkit-mathematics-5.0.2-1.x86_64-runtime.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-mathematics/releases/download/5.0.2/open-space-toolkit-mathematics-5.0.2-1.x86_64-runtime.deb",
+    "published_digest": "sha256:d9a7f4e555c043ec2a01c8d1234dc39d51e8e5d21412c58c1d21d71fce11f1a3",
+    "sha256": "d9a7f4e555c043ec2a01c8d1234dc39d51e8e5d21412c58c1d21d71fce11f1a3",
+    "size": 1103030
+  },
+  {
+    "name": "open-space-toolkit-physics-15.0.0-1.x86_64-runtime.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-physics/releases/download/15.0.0/open-space-toolkit-physics-15.0.0-1.x86_64-runtime.deb",
+    "published_digest": "sha256:44474d89536e16d487d230e998b3de0f08bf7802678ec4af52bafc4882ff065c",
+    "sha256": "44474d89536e16d487d230e998b3de0f08bf7802678ec4af52bafc4882ff065c",
+    "size": 1678326
+  },
+  {
+    "name": "open-space-toolkit-astrodynamics-18.0.1-1.x86_64-runtime.deb",
+    "url": "https://github.com/open-space-collective/open-space-toolkit-astrodynamics/releases/download/18.0.1/open-space-toolkit-astrodynamics-18.0.1-1.x86_64-runtime.deb",
+    "published_digest": "sha256:a90045c5703efe45e64f30d4f7d33d74a783066922acc7c74418e3996392138a",
+    "sha256": "a90045c5703efe45e64f30d4f7d33d74a783066922acc7c74418e3996392138a",
+    "size": 1616752
+  },
+  {
+    "url": "https://deb.debian.org/debian/pool/main/e/eigen3/libeigen3-dev_3.4.0-5_all.deb",
+    "sha256": "123ff96e6929713b852f58a53727379149fc4a2b682bd04605e784f6620ac08e",
+    "bytes": 1034496
+  },
+  {
+    "url": "https://deb.debian.org/debian/pool/main/b/boost1.83/libboost1.83-dev_1.83.0-4.2~bpo12+1_amd64.deb",
+    "bytes": 10587260,
+    "sha256": "83ac68a24f5a9959b5bfcabd558b08e699b56dd17e41e12c04237c6bef2eb399"
+  }
+]
