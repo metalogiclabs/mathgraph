@@ -1,0 +1,56 @@
+name: Historical assurance replay
+on:
+  push:
+    branches: [research/assurance-historical-replay-20261125]
+  workflow_dispatch:
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy==1.26.4
+      - name: Execute exact before and after source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/geospace-code/pymap3d.git upstream
+          cd upstream
+          FIX=1e5b3d8f87f2aecd0513f2f5f6ce1503e7449e3e
+          mkdir -p ../evidence
+          cat > ../probe.py <<'PY'
+          import json, numpy as np, pymap3d as pm
+          a=6378137.
+          def scalar(h):
+              lat,lon,alt=pm.ecef2geodetic(a+h,0.,0.)
+              return abs(lat)<1e-7 and abs(lon)<1e-7 and abs(alt-h)<1e-4
+          def batch(h):
+              h=np.array(h,dtype=float)
+              try:
+                  lat,lon,alt=pm.ecef2geodetic(a+h,np.zeros_like(h),np.zeros_like(h))
+                  return bool(np.allclose(lat,0,atol=1e-7) and np.allclose(lon,0,atol=1e-7) and np.allclose(alt,h,atol=1e-4,rtol=0))
+              except Exception as e:
+                  print(type(e).__name__,str(e))
+                  return False
+          hs=[-1000.,-10.,10.,1000.]
+          baseline=[scalar(h) for h in hs]
+          controls=[batch([-1000.,-10.]),batch([10.,1000.])]
+          mixed=[batch([x,y]) for x in hs for y in hs if x*y<0]
+          print(json.dumps(dict(scalar=baseline,homogeneous=controls,mixed=mixed)))
+          assert all(baseline) and all(controls)
+          import os
+          expected=os.environ['EXPECTED']=='fixed'
+          assert all(mixed) if expected else not any(mixed)
+          PY
+          for stage in before fixed; do
+            if [ "$stage" = before ]; then git checkout --detach "$FIX^"; else git checkout --detach "$FIX"; fi
+            git rev-parse HEAD | tee "../evidence/$stage.sha"
+            EXPECTED="$stage" PYTHONPATH="$PWD/src" python ../probe.py | tee "../evidence/$stage.log"
+          done
+          cp ../probe.py ../evidence/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-assurance-evidence
+          path: evidence/
