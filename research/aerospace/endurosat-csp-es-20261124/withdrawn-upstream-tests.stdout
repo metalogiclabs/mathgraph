@@ -1,0 +1,5 @@
+Running suite(s): Deduplication
+33%: Checks: 3, Failures: 2, Errors: 0
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:81:P:search:test_dedup_window:0: Passed
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:98:F:search:test_dedup_oldest_entry_1036:0: Assertion 'is_duplicate(1000, 0) == 1' failed: is_duplicate(1000, 0) == 0, 1 == 1
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:118:F:search:test_dedup_clock_wrap_1036:0: Assertion 'is_duplicate((4294967295U) - 19, 1) == 1' failed: is_duplicate((4294967295U) - 19, 1) == 0, 1 == 1

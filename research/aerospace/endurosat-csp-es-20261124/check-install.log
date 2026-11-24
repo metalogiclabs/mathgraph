@@ -1,0 +1,19 @@
+-- Install configuration: "Debug"
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/include/check_stdint.h
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/pkgconfig/check.pc
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/cmake/check/check-targets.cmake
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/cmake/check/check-targets-debug.cmake
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/cmake/check/check-config.cmake
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/cmake/check/check-config-version.cmake
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/libcheck.a
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/include/check.h
+-- Up-to-date: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/include/check_stdint.h
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/libcheck.so.0.15.2
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/libcheck.so.0
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/libcheck.so
+-- Up-to-date: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/include/check.h
+-- Up-to-date: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/include/check_stdint.h
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/bin/checkmk
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/share/man
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/share/man/man1
+-- Installing: /workspace/scratch/0e0b2d02ebfd/libcheck-installed/share/man/man1/checkmk.1

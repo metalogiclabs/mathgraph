@@ -1,0 +1,63 @@
+[  1%] Building C object lib/CMakeFiles/compat.dir/libcompat.c.o
+[  3%] Building C object src/CMakeFiles/check.dir/check.c.o
+[  5%] Building C object lib/CMakeFiles/compat.dir/fpclassify.c.o
+[  7%] Building C object src/CMakeFiles/check.dir/check_error.c.o
+[  9%] Linking C static library libcompat.a
+[  9%] Built target compat
+[ 11%] Building C object src/CMakeFiles/checkShared.dir/check.c.o
+[ 12%] Building C object src/CMakeFiles/check.dir/check_list.c.o
+[ 14%] Building C object src/CMakeFiles/check.dir/check_log.c.o
+[ 16%] Building C object src/CMakeFiles/checkShared.dir/check_error.c.o
+[ 18%] Building C object src/CMakeFiles/check.dir/check_msg.c.o
+[ 20%] Building C object src/CMakeFiles/checkShared.dir/check_list.c.o
+[ 22%] Building C object src/CMakeFiles/check.dir/check_pack.c.o
+[ 24%] Building C object src/CMakeFiles/checkShared.dir/check_log.c.o
+[ 25%] Building C object src/CMakeFiles/check.dir/check_print.c.o
+[ 27%] Building C object src/CMakeFiles/checkShared.dir/check_msg.c.o
+[ 29%] Building C object src/CMakeFiles/check.dir/check_run.c.o
+[ 31%] Building C object src/CMakeFiles/checkShared.dir/check_pack.c.o
+[ 33%] Building C object src/CMakeFiles/check.dir/check_str.c.o
+[ 35%] Building C object src/CMakeFiles/checkShared.dir/check_print.c.o
+[ 37%] Building C object src/CMakeFiles/check.dir/__/lib/fpclassify.c.o
+[ 40%] Building C object src/CMakeFiles/checkShared.dir/check_run.c.o
+[ 40%] Linking C static library libcheck.a
+[ 40%] Built target check
+[ 42%] Building C object src/CMakeFiles/checkShared.dir/check_str.c.o
+[ 44%] Building C object src/CMakeFiles/checkShared.dir/__/lib/fpclassify.c.o
+[ 46%] Building C object tests/CMakeFiles/check_check.dir/check_check_exit.c.o
+[ 48%] Linking C shared library libcheck.so
+[ 50%] Building C object tests/CMakeFiles/check_check.dir/check_check_fixture.c.o
+[ 50%] Built target checkShared
+[ 51%] Building C object tests/CMakeFiles/check_check_export.dir/check_check_sub.c.o
+[ 53%] Building C object tests/CMakeFiles/check_check.dir/check_check_fork.c.o
+[ 55%] Building C object tests/CMakeFiles/check_check.dir/check_check_limit.c.o
+[ 57%] Building C object tests/CMakeFiles/check_check.dir/check_check_log.c.o
+[ 59%] Building C object tests/CMakeFiles/check_check.dir/check_check_log_internal.c.o
+[ 61%] Building C object tests/CMakeFiles/check_check.dir/check_check_main.c.o
+[ 62%] Building C object tests/CMakeFiles/check_check.dir/check_check_master.c.o
+[ 64%] Building C object tests/CMakeFiles/check_check.dir/check_check_msg.c.o
+[ 68%] Building C object tests/CMakeFiles/check_check_export.dir/check_check_master.c.o
+[ 66%] Building C object tests/CMakeFiles/check_check.dir/check_check_pack.c.o
+[ 70%] Building C object tests/CMakeFiles/check_check.dir/check_check_selective.c.o
+[ 72%] Building C object tests/CMakeFiles/check_check_export.dir/check_check_log.c.o
+[ 74%] Building C object tests/CMakeFiles/check_check.dir/check_check_sub.c.o
+[ 75%] Building C object tests/CMakeFiles/check_check_export.dir/check_check_fork.c.o
+[ 77%] Building C object tests/CMakeFiles/check_check_export.dir/check_check_export_main.c.o
+[ 79%] Linking C executable check_check_export
+[ 79%] Built target check_check_export
+[ 81%] Building C object tests/CMakeFiles/ex_output.dir/ex_output.c.o
+[ 83%] Linking C executable ex_output
+[ 83%] Built target ex_output
+[ 85%] Building C object tests/CMakeFiles/check_nofork.dir/check_nofork.c.o
+[ 87%] Linking C executable check_nofork
+[ 87%] Built target check_nofork
+[ 88%] Building C object tests/CMakeFiles/check_nofork_teardown.dir/check_nofork_teardown.c.o
+[ 90%] Linking C executable check_nofork_teardown
+[ 90%] Built target check_nofork_teardown
+[ 92%] Building C object tests/CMakeFiles/check_set_max_msg_size.dir/check_set_max_msg_size.c.o
+[ 94%] Building C object tests/CMakeFiles/check_check.dir/check_check_tags.c.o
+[ 96%] Linking C executable check_set_max_msg_size
+[ 96%] Built target check_set_max_msg_size
+[ 98%] Building C object tests/CMakeFiles/check_check.dir/check_list.c.o
+[100%] Linking C executable check_check
+[100%] Built target check_check

@@ -1,0 +1,632 @@
+{
+  "catalogue_commit": "58ddb19e00e6097d2196d7a1a4760ccb653924d5",
+  "catalogue_blob": "c65a0fb89098f6aa7b7324206a3f50d77a1f5c03",
+  "revision": "2026-11-22-r2",
+  "boundary": "104 candidate search prompts. Numbering and mappings do not establish independent mechanisms, witnessed defects, executable coverage or exhaustiveness.",
+  "items": [
+    {
+      "id": 1,
+      "title": "Reality",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 2,
+      "title": "Causality",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Two-line intervention and withdrawal establish selected causal effect; this is a known upstream repair."
+    },
+    {
+      "id": 3,
+      "title": "Possibility",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Synthetic valid CSP IDs/payloads; elapsed intervals <=10001 ms; no operational inputs."
+    },
+    {
+      "id": 4,
+      "title": "Values",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 5,
+      "title": "Ethics",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 6,
+      "title": "Consequences",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 7,
+      "title": "Stakeholders",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 8,
+      "title": "Purpose",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 9,
+      "title": "Mission",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 10,
+      "title": "Authority",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Fork source contract and existing upstream #1036 used, not an inferred operational requirement."
+    },
+    {
+      "id": 11,
+      "title": "Intent",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 12,
+      "title": "Communication",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 13,
+      "title": "Needs",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 14,
+      "title": "Objectives",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 15,
+      "title": "Context",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 16,
+      "title": "Boundaries",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Linux/GCC and two CSP versions only; other architectures and whole-project claims excluded."
+    },
+    {
+      "id": 17,
+      "title": "Environment",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Missing CMake and ZeroMQ headers treated as setup/environmental failures."
+    },
+    {
+      "id": 18,
+      "title": "Operating concepts",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 19,
+      "title": "Assumptions",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "At most one 32-bit clock wrap and retained ring capacity are explicit premises."
+    },
+    {
+      "id": 20,
+      "title": "Elicitation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 21,
+      "title": "Interpretation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 22,
+      "title": "Requirements",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 23,
+      "title": "Requirement derivation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 24,
+      "title": "Requirement allocation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 25,
+      "title": "Requirement validity",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 26,
+      "title": "Requirement completeness",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 27,
+      "title": "Requirement consistency",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 28,
+      "title": "Acceptance criteria",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "22 original tests remain green despite the selected failures."
+    },
+    {
+      "id": 29,
+      "title": "Language",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 30,
+      "title": "Vocabulary and ontology",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 31,
+      "title": "Definitions",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 32,
+      "title": "Typing and identity",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Packet identity tested using same or distinct synthetic payloads; no collision claim."
+    },
+    {
+      "id": 33,
+      "title": "Units and reference frames",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 34,
+      "title": "Encoding",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Source inspected for header packing; no independent wire-format experiment executed."
+    },
+    {
+      "id": 35,
+      "title": "Abstraction",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 36,
+      "title": "Models",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 37,
+      "title": "Specifications",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 38,
+      "title": "Contracts",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "100-ms/16-entry source contract and upstream regression establish bounded expected behavior."
+    },
+    {
+      "id": 39,
+      "title": "Semantics",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 40,
+      "title": "Translation and refinement",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 41,
+      "title": "Formalization",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 42,
+      "title": "Logical foundations",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 43,
+      "title": "Axioms",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 44,
+      "title": "Formal statements",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 45,
+      "title": "Proof obligations",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 46,
+      "title": "Proof construction",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 47,
+      "title": "Proof checking",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 48,
+      "title": "Trusted computing base",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 49,
+      "title": "Proof adequacy",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 50,
+      "title": "Architecture",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 51,
+      "title": "Design",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 52,
+      "title": "Algorithms",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "240 selected cases exercise two known duplicate-search defects."
+    },
+    {
+      "id": 53,
+      "title": "Interfaces",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 54,
+      "title": "Implementation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 55,
+      "title": "Build and dependency resolution",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Unmodified project CMake builds selected actual library and unit-test targets; pins and commands retained."
+    },
+    {
+      "id": 56,
+      "title": "Configuration and deployment",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 57,
+      "title": "Runtime behavior",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Controlled uint32 millisecond clock demonstrates before/after-wrap behavior."
+    },
+    {
+      "id": 58,
+      "title": "Physical effects",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 59,
+      "title": "Test oracle",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Unbounded integer elapsed-time and finite-ring oracle specified independently."
+    },
+    {
+      "id": 60,
+      "title": "Test execution",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Actual 22 author tests and three upstream tests executed; raw outputs retained."
+    },
+    {
+      "id": 61,
+      "title": "Observation and measurement",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 62,
+      "title": "Evidence and provenance",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Source, upstream provenance, dependency commits, commands and manifests retained."
+    },
+    {
+      "id": 63,
+      "title": "Claims and warrants",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Bounded backport compatibility warranted; no novelty, operational or paid-demand claim."
+    },
+    {
+      "id": 64,
+      "title": "Authorization, decisions and learning",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 65,
+      "title": "Identity",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 66,
+      "title": "Distinction",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Same payload at different elapsed ages requires different duplicate decisions."
+    },
+    {
+      "id": 67,
+      "title": "Equivalence",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 68,
+      "title": "Scope",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 69,
+      "title": "Completeness of representation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 70,
+      "title": "Information loss",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 71,
+      "title": "Ambiguity",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 72,
+      "title": "Vacuity",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 73,
+      "title": "Observability",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 74,
+      "title": "Oracle independence",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Python oracle does not reproduce implementation's expiry expression; same researcher is not third-party validation."
+    },
+    {
+      "id": 75,
+      "title": "Common-mode failure",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 76,
+      "title": "Counterfactual behavior",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Intervention followed by withdrawal recreates original output."
+    },
+    {
+      "id": 77,
+      "title": "Sensitivity",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Upstream regression sensitivity demonstrated by FAIL -> PASS -> FAIL."
+    },
+    {
+      "id": 78,
+      "title": "Uncertainty",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 79,
+      "title": "Temporal validity",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Current develop source rechecked, and prior upstream fix located before novelty claim."
+    },
+    {
+      "id": 80,
+      "title": "Change propagation",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Known upstream correction absent from company fork."
+    },
+    {
+      "id": 81,
+      "title": "Supersession",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Existing libcsp #1036 takes novelty precedence."
+    },
+    {
+      "id": 82,
+      "title": "Reproducibility",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Procedure, compiler, dependency identity, inputs and raw results retained; no separate hosted replay."
+    },
+    {
+      "id": 83,
+      "title": "Independence of evidence",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Two known mechanisms and overlapping catalogue facets are not multiple independent discoveries."
+    },
+    {
+      "id": 84,
+      "title": "Adversarial robustness",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 85,
+      "title": "Security and trust boundaries",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 86,
+      "title": "Permission and legitimacy",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "No external submission/contact; work remains in authorized research scope."
+    },
+    {
+      "id": 87,
+      "title": "Incentives",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 88,
+      "title": "Accountability",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 89,
+      "title": "Risk and reversibility",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 90,
+      "title": "Evidence transport",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 91,
+      "title": "Composition",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 92,
+      "title": "Emergence",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 93,
+      "title": "Human interpretation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 94,
+      "title": "Institutional interpretation",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 95,
+      "title": "Environmental drift",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 96,
+      "title": "Unknown unknowns",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Finite catalogue and matrix explicitly do not establish exhaustiveness."
+    },
+    {
+      "id": 97,
+      "title": "Numerics",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "uint32 timestamp wrap and ring iteration examined."
+    },
+    {
+      "id": 98,
+      "title": "Statistical inference",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 99,
+      "title": "Liveness and termination",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 100,
+      "title": "Fault handling and recovery",
+      "status": "UNASSESSED",
+      "note": "Not assessed in this bounded dedup backport iteration."
+    },
+    {
+      "id": 101,
+      "title": "Input coverage",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "240 selected cases; arbitrary payloads, cycles, targets and integrations remain unqualified."
+    },
+    {
+      "id": 102,
+      "title": "Legal, regulatory and privacy obligations",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "MIT project and upstream-test license attribution preserved; no legal conclusion needed."
+    },
+    {
+      "id": 103,
+      "title": "Maintenance and evolution",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Fork divergence and existing upstream fix identified."
+    },
+    {
+      "id": 104,
+      "title": "Value",
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Reviewable backport qualified; buyer demand, collaboration interest and comparative advantage UNKNOWN."
+    }
+  ]
+}

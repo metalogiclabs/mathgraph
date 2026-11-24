@@ -1,0 +1,185 @@
+CMake Warning (deprecated) at CMakeLists.txt:23 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+CMake Warning (deprecated) at CMakeLists.txt:42 (cmake_policy):
+  The OLD behavior for policy CMP0076 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+-- The C compiler identification is GNU 14.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Setting build type to 'Debug' as none was specified.
+-- Looking for include file sys/types.h
+-- Looking for include file sys/types.h - found
+-- Looking for include files sys/types.h, errno.h
+-- Looking for include files sys/types.h, errno.h - found
+-- Looking for 3 include files sys/types.h, ..., inttypes.h
+-- Looking for 3 include files sys/types.h, ..., inttypes.h - found
+-- Looking for 4 include files sys/types.h, ..., limits.h
+-- Looking for 4 include files sys/types.h, ..., limits.h - found
+-- Looking for 5 include files sys/types.h, ..., regex.h
+-- Looking for 5 include files sys/types.h, ..., regex.h - found
+-- Looking for 6 include files sys/types.h, ..., signal.h
+-- Looking for 6 include files sys/types.h, ..., signal.h - found
+-- Looking for 7 include files sys/types.h, ..., stdarg.h
+-- Looking for 7 include files sys/types.h, ..., stdarg.h - found
+-- Looking for 8 include files sys/types.h, ..., stdint.h
+-- Looking for 8 include files sys/types.h, ..., stdint.h - found
+-- Looking for 9 include files sys/types.h, ..., stdlib.h
+-- Looking for 9 include files sys/types.h, ..., stdlib.h - found
+-- Looking for 10 include files sys/types.h, ..., string.h
+-- Looking for 10 include files sys/types.h, ..., string.h - found
+-- Looking for 11 include files sys/types.h, ..., strings.h
+-- Looking for 11 include files sys/types.h, ..., strings.h - found
+-- Looking for 12 include files sys/types.h, ..., sys/time.h
+-- Looking for 12 include files sys/types.h, ..., sys/time.h - found
+-- Looking for 13 include files sys/types.h, ..., time.h
+-- Looking for 13 include files sys/types.h, ..., time.h - found
+-- Looking for 14 include files sys/types.h, ..., unistd.h
+-- Looking for 14 include files sys/types.h, ..., unistd.h - found
+-- Looking for 15 include files sys/types.h, ..., pthread.h
+-- Looking for 15 include files sys/types.h, ..., pthread.h - found
+-- Looking for 16 include files sys/types.h, ..., windows.h
+-- Looking for 16 include files sys/types.h, ..., windows.h - not found
+-- Looking for fork
+-- Looking for fork - found
+-- Looking for getline
+-- Looking for getline - found
+-- Looking for getpid
+-- Looking for getpid - found
+-- Looking for gettimeofday
+-- Looking for gettimeofday - found
+-- Looking for localtime_r
+-- Looking for localtime_r - found
+-- Looking for malloc
+-- Looking for malloc - found
+-- Looking for mkstemp
+-- Looking for mkstemp - found
+-- Looking for realloc
+-- Looking for realloc - found
+-- Looking for setenv
+-- Looking for setenv - found
+-- Looking for sigaction
+-- Looking for sigaction - found
+-- Looking for strdup
+-- Looking for strdup - found
+-- Looking for strsignal
+-- Looking for strsignal - found
+-- Looking for _getpid
+-- Looking for _getpid - not found
+-- Looking for _strdup
+-- Looking for _strdup - not found
+-- Looking for alarm
+-- Looking for alarm - found
+-- Looking for regcomp
+-- Looking for regcomp - found
+-- Looking for regexec
+-- Looking for regexec - found
+-- Looking for snprintf
+-- Looking for snprintf - found
+-- Looking for vsnprintf
+-- Looking for vsnprintf - found
+-- Looking for snprintf
+-- Looking for snprintf - found
+-- Looking for vsnprintf
+-- Looking for vsnprintf - found
+-- Performing Test HAVE_PTHREADS_FLAG
+-- Performing Test HAVE_PTHREADS_FLAG - Success
+-- Looking for INT64_MAX
+-- Looking for INT64_MAX - found
+-- Looking for INT64_MIN
+-- Looking for INT64_MIN - found
+-- Looking for UINT32_MAX
+-- Looking for UINT32_MAX - found
+-- Looking for UINT64_MAX
+-- Looking for UINT64_MAX - found
+-- Looking for SIZE_MAX
+-- Looking for SIZE_MAX - found
+-- Looking for SSIZE_MAX
+-- Looking for SSIZE_MAX - found
+-- Performing Test HAVE_STRUCT_ITIMERSPEC_IT_VALUE
+-- Performing Test HAVE_STRUCT_ITIMERSPEC_IT_VALUE - Failed
+-- Looking for stddef.h
+-- Looking for stddef.h - found
+-- Check size of short
+-- Check size of short - done
+-- Check size of int
+-- Check size of int - done
+-- Check size of long
+-- Check size of long - done
+-- Check size of long long
+-- Check size of long long - done
+-- Check size of unsigned short
+-- Check size of unsigned short - done
+-- Check size of unsigned
+-- Check size of unsigned - done
+-- Check size of unsigned long
+-- Check size of unsigned long - done
+-- Check size of unsigned long long
+-- Check size of unsigned long long - done
+-- Check size of __int64
+-- Check size of __int64 - failed
+-- Check size of unsigned __int64
+-- Check size of unsigned __int64 - failed
+-- Check size of int16_t
+-- Check size of int16_t - done
+-- Check size of int32_t
+-- Check size of int32_t - done
+-- Check size of int64_t
+-- Check size of int64_t - done
+-- Check size of intmax_t
+-- Check size of intmax_t - done
+-- Check size of uint8_t
+-- Check size of uint8_t - done
+-- Check size of uint16_t
+-- Check size of uint16_t - done
+-- Check size of uint32_t
+-- Check size of uint32_t - done
+-- Check size of uint64_t
+-- Check size of uint64_t - done
+-- Check size of uintmax_t
+-- Check size of uintmax_t - done
+-- Check size of clock_t
+-- Check size of clock_t - done
+-- Check size of clockid_t
+-- Check size of clockid_t - done
+-- Check size of size_t
+-- Check size of size_t - done
+-- Check size of ssize_t
+-- Check size of ssize_t - done
+-- Check size of pid_t
+-- Check size of pid_t - done
+-- Check size of timer_t
+-- Check size of timer_t - done
+-- Looking for floor in m
+-- Looking for floor in m - found
+-- Looking for clock_gettime in rt
+-- Looking for clock_gettime in rt - found
+-- Looking for subunit_test_start in subunit
+-- Looking for subunit_test_start in subunit - not found
+-- Configuring done (3.4s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CHECK_ENABLE_SUBUNIT
+
+
+-- Build files have been written to: /workspace/scratch/0e0b2d02ebfd/libcheck/build

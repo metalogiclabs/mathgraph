@@ -1,0 +1,16 @@
+[100%] Built target csp_es
+[ 85%] Built target csp_es
+[ 87%] Building C object unittests/CMakeFiles/csp_tests.dir/main.c.o
+[ 88%] Building C object unittests/CMakeFiles/csp_tests.dir/queue.c.o
+[ 92%] Building C object unittests/CMakeFiles/csp_tests.dir/hmac.c.o
+[ 92%] Building C object unittests/CMakeFiles/csp_tests.dir/buffer.c.o
+[ 94%] Building C object unittests/CMakeFiles/csp_tests.dir/routing_enable_disable.c.o
+[ 96%] Building C object unittests/CMakeFiles/csp_tests.dir/csp_version.c.o
+[ 98%] Building C object unittests/CMakeFiles/csp_tests.dir/dedup.c.o
+[100%] Linking C executable csp_tests
+[100%] Built target csp_tests
+[ 95%] Built target csp_es
+[100%] Built target csp_arch
+[  2%] Built target csp_posix_helper
+[ 95%] Built target csp_es
+[100%] Built target csp_server_client

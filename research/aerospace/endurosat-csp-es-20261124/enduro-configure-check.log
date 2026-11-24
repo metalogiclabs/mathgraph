@@ -1,0 +1,17 @@
+-- libcsp_es: No version provided, using placeholder 0.0.0
+-- Checking for module 'libsystemd'
+--   Package 'libsystemd', required by 'virtual:world', not found
+-- pkg-config found, including install_paths.cmake
+-- Building for Linux
+-- Checking for one of the modules 'yaml-0.1'
+No libyaml found
+-- Checking for one of the modules 'libzmq'
+No libzmq found
+-- Checking for one of the modules 'libsocketcan'
+No libsocketcan found
+-- Checking for one of the modules 'check'
+-- Found check 0.15.2
+-- CSP_TRACEROUTE is OFF - skipping csp_virtual_topology build. Use -DCSP_TRACEROUTE=ON to enable
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph

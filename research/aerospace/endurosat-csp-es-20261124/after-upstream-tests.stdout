@@ -1,0 +1,5 @@
+Running suite(s): Deduplication
+100%: Checks: 3, Failures: 0, Errors: 0
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:81:P:search:test_dedup_window:0: Passed
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:102:P:search:test_dedup_oldest_entry_1036:0: Passed
+/workspace/scratch/0e0b2d02ebfd/enduro-evidence/upstream-dedup-tests.c:121:P:search:test_dedup_clock_wrap_1036:0: Passed
