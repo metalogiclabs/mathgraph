@@ -1,0 +1,632 @@
+{
+  "catalogue_commit": "58ddb19e00e6097d2196d7a1a4760ccb653924d5",
+  "boundary": "104 candidate search prompts. Numbering and mappings do not establish independent mechanisms, witnessed defects, executable coverage or exhaustiveness.",
+  "scoped_assessments": 41,
+  "unassessed": 63,
+  "items": [
+    {
+      "id": 1,
+      "title": "Reality",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 2,
+      "title": "Causality",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 3,
+      "title": "Possibility",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 4,
+      "title": "Values",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 5,
+      "title": "Ethics",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 6,
+      "title": "Consequences",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 7,
+      "title": "Stakeholders",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 8,
+      "title": "Purpose",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 9,
+      "title": "Mission",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 10,
+      "title": "Authority",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Pinned upstream, Javadoc, original tests, and template establish scoped authority."
+    },
+    {
+      "id": 11,
+      "title": "Intent",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Intended numerical conversion checked against Javadoc and decimal conversion; maintainer use-case priority remains unknown."
+    },
+    {
+      "id": 12,
+      "title": "Communication",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 13,
+      "title": "Needs",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 14,
+      "title": "Objectives",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 15,
+      "title": "Context",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 16,
+      "title": "Boundaries",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Direct offline Java APIs only; no runtime server or operational consequence inferred."
+    },
+    {
+      "id": 17,
+      "title": "Environment",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 18,
+      "title": "Operating concepts",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 19,
+      "title": "Assumptions",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Unsigned API values interpreted as nonnegative mathematical integers; raw bit reinterpretation considered separately."
+    },
+    {
+      "id": 20,
+      "title": "Elicitation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 21,
+      "title": "Interpretation",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Value.toLong has explicit range/exception contract; engineering conversion compared with decimal route."
+    },
+    {
+      "id": 22,
+      "title": "Requirements",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 23,
+      "title": "Requirement derivation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 24,
+      "title": "Requirement allocation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 25,
+      "title": "Requirement validity",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 26,
+      "title": "Requirement completeness",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 27,
+      "title": "Requirement consistency",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Compare two conversion routes for the same mathematical integer and target type."
+    },
+    {
+      "id": 28,
+      "title": "Acceptance criteria",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Original bit-count helper tests do not assert full conversion correspondence."
+    },
+    {
+      "id": 29,
+      "title": "Language",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 30,
+      "title": "Vocabulary and ontology",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 31,
+      "title": "Definitions",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Differentiate Java signed carriers from unsigned mathematical values."
+    },
+    {
+      "id": 32,
+      "title": "Typing and identity",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Typed UINT32/UINT64 identity retained in oracle rather than equating carrier with value."
+    },
+    {
+      "id": 33,
+      "title": "Units and reference frames",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 34,
+      "title": "Encoding",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Native original conversion discrepancies reproduced; candidate repair and withdrawal qualified on finite matrices."
+    },
+    {
+      "id": 35,
+      "title": "Abstraction",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 36,
+      "title": "Models",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 37,
+      "title": "Specifications",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 38,
+      "title": "Contracts",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Consumer-facing engineering value conversion; value-preservation and representability obligations."
+    },
+    {
+      "id": 39,
+      "title": "Semantics",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Compare typed value, exact decimal parsing, floating conversion and documented toLong."
+    },
+    {
+      "id": 40,
+      "title": "Translation and refinement",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Exact integer range oracle and BigInteger float conversion define preservation relation."
+    },
+    {
+      "id": 41,
+      "title": "Formalization",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 42,
+      "title": "Logical foundations",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 43,
+      "title": "Axioms",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 44,
+      "title": "Formal statements",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 45,
+      "title": "Proof obligations",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 46,
+      "title": "Proof construction",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 47,
+      "title": "Proof checking",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 48,
+      "title": "Trusted computing base",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 49,
+      "title": "Proof adequacy",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 50,
+      "title": "Architecture",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 51,
+      "title": "Design",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 52,
+      "title": "Algorithms",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Synthetic values at bit-width and sign boundaries."
+    },
+    {
+      "id": 53,
+      "title": "Interfaces",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Direct public conversion API boundary selected."
+    },
+    {
+      "id": 54,
+      "title": "Implementation",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Pinned implementation executed through native Maven/JUnit in two hosted runs."
+    },
+    {
+      "id": 55,
+      "title": "Build and dependency resolution",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Local failures retained as non-evidence. Hosted full-JDK/original-POM native builds and assertions inspected."
+    },
+    {
+      "id": 56,
+      "title": "Configuration and deployment",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 57,
+      "title": "Runtime behavior",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 58,
+      "title": "Physical effects",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 59,
+      "title": "Test oracle",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "BigInteger range oracle plus independently implemented decimal-route controls."
+    },
+    {
+      "id": 60,
+      "title": "Test execution",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "JUnit XML and actual raw observations required; success indicator alone insufficient."
+    },
+    {
+      "id": 61,
+      "title": "Observation and measurement",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 62,
+      "title": "Evidence and provenance",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Pinned commit, source hashes, tool versions, raw TSV, manifest and artifact digest."
+    },
+    {
+      "id": 63,
+      "title": "Claims and warrants",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "WARRANTED finite counterexamples on named public APIs and consumer; full compatibility and commercial demand remain UNKNOWN."
+    },
+    {
+      "id": 64,
+      "title": "Authorization, decisions and learning",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 65,
+      "title": "Identity",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Signed and unsigned source type tracked independently of storage width."
+    },
+    {
+      "id": 66,
+      "title": "Distinction",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Numeric distinctions across zero extension, sign and range boundaries."
+    },
+    {
+      "id": 67,
+      "title": "Equivalence",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Same mathematical input encoded through different source Value variants."
+    },
+    {
+      "id": 68,
+      "title": "Scope",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "No operational, full-repository or 104-detector claim."
+    },
+    {
+      "id": 69,
+      "title": "Completeness of representation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 70,
+      "title": "Information loss",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Assess information changes at numeric representation boundary."
+    },
+    {
+      "id": 71,
+      "title": "Ambiguity",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 72,
+      "title": "Vacuity",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 73,
+      "title": "Observability",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 74,
+      "title": "Oracle independence",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Oracle uses BigInteger; positive decimal route and Value.toDouble controls."
+    },
+    {
+      "id": 75,
+      "title": "Common-mode failure",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Compare independent oracle with implementation rather than shared round-trip only."
+    },
+    {
+      "id": 76,
+      "title": "Counterfactual behavior",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Repair clears all four finite matrices; withdrawal restores byte-identical baseline tables in two runs."
+    },
+    {
+      "id": 77,
+      "title": "Sensitivity",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 78,
+      "title": "Uncertainty",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 79,
+      "title": "Temporal validity",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Current upstream heads and prior issue/PR history rechecked."
+    },
+    {
+      "id": 80,
+      "title": "Change propagation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 81,
+      "title": "Supersession",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "OpenC3 and Antaris publication uncertainty superseded by verified issue existence."
+    },
+    {
+      "id": 82,
+      "title": "Reproducibility",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Pinned source plus native harness and commands in isolated branch."
+    },
+    {
+      "id": 83,
+      "title": "Independence of evidence",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Recompute archive SHA and inspect assertions rather than relying on CI status."
+    },
+    {
+      "id": 84,
+      "title": "Adversarial robustness",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 85,
+      "title": "Security and trust boundaries",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 86,
+      "title": "Permission and legitimacy",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "No upstream issues, PRs or messages submitted in this iteration."
+    },
+    {
+      "id": 87,
+      "title": "Incentives",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 88,
+      "title": "Accountability",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 89,
+      "title": "Risk and reversibility",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 90,
+      "title": "Evidence transport",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 91,
+      "title": "Composition",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "SoftwareParameterManager.transformValue whole-parameter path tested on 50 synthetic cases; 13 discrepancies reproduced and repaired. No server or link started."
+    },
+    {
+      "id": 92,
+      "title": "Emergence",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 93,
+      "title": "Human interpretation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 94,
+      "title": "Institutional interpretation",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 95,
+      "title": "Environmental drift",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 96,
+      "title": "Unknown unknowns",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 97,
+      "title": "Numerics",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Primary assessed candidate: integer ranges, unsigned promotion, float correspondence."
+    },
+    {
+      "id": 98,
+      "title": "Statistical inference",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 99,
+      "title": "Liveness and termination",
+      "assessment": "UNASSESSED",
+      "scope_or_reason": "Outside this bounded numerical conversion iteration; no absence-of-defect inference."
+    },
+    {
+      "id": 100,
+      "title": "Fault handling and recovery",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Check documented rejection as well as accepted values."
+    },
+    {
+      "id": 101,
+      "title": "Input coverage",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Finite boundary-selected matrix; exhaustive input coverage not claimed."
+    },
+    {
+      "id": 102,
+      "title": "Legal, regulatory and privacy obligations",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "README license and CLA notices inspected; no agreement signed or proprietary kernel published."
+    },
+    {
+      "id": 103,
+      "title": "Maintenance and evolution",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Relevant historical fixes and source changes checked for novelty."
+    },
+    {
+      "id": 104,
+      "title": "Value",
+      "assessment": "SCOPED_ASSESSMENT",
+      "scope_or_reason": "Commercial prioritization is inference; buyer demand and paid engagement unknown."
+    }
+  ]
+}

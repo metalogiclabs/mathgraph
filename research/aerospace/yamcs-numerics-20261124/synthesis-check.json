@@ -1,0 +1,41 @@
+{
+  "claim": "Wrong semantic transport need not lose distinctions",
+  "boundary": "finite tested UINT32-to-signed64 subset",
+  "cases": 15,
+  "distinct_inputs": 15,
+  "distinct_outputs": 15,
+  "wrong_values": 3,
+  "witnesses": [
+    {
+      "source": "UINT32",
+      "input": "2147483648",
+      "targetBits": "64",
+      "targetSigned": "true",
+      "oracleFits": "true",
+      "actual": "SINT64:-2147483648",
+      "match": "false",
+      "decimalRouteMatch": "true"
+    },
+    {
+      "source": "UINT32",
+      "input": "2147483649",
+      "targetBits": "64",
+      "targetSigned": "true",
+      "oracleFits": "true",
+      "actual": "SINT64:-2147483647",
+      "match": "false",
+      "decimalRouteMatch": "true"
+    },
+    {
+      "source": "UINT32",
+      "input": "4294967295",
+      "targetBits": "64",
+      "targetSigned": "true",
+      "oracleFits": "true",
+      "actual": "SINT64:-1",
+      "match": "false",
+      "decimalRouteMatch": "true"
+    }
+  ],
+  "implication": "The hypothesis that information erasure is necessary for every campaign discrepancy is rejected; injectivity is insufficient for semantic correspondence."
+}
