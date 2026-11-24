@@ -3,7 +3,7 @@ package org.orekit.files.ccsds.ndm.adm.aem;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,8 +118,8 @@ public class MathGraphAttitudeAuditTest {
                     for (boolean body : new boolean[] {true, false}) {
                         for (AttitudeType type : new AttitudeType[] {AttitudeType.QUATERNION_ANGVEL, AttitudeType.EULER_ANGLE_ANGVEL}) {
                             final Aem file = parse(message(type, order, a, forward, body));
-                            final AemSegment segment = file.getSegments().getFirst();
-                            final TimeStampedAngularCoordinates ac = segment.getAngularCoordinates().getFirst();
+                            final AemSegment segment = file.getSegments().get(0);
+                            final TimeStampedAngularCoordinates ac = segment.getAngularCoordinates().get(0);
                             final double error = distance(W, ac.getRotationRate().toArray());
                             final double matrixError = maxDiff(forward ? m : transpose(m), ac.getRotation().getMatrix());
                             cases++;
@@ -134,6 +134,39 @@ public class MathGraphAttitudeAuditTest {
     }
 
     @Test
+    void generatedAngularVelocityFrames() throws Exception {
+        int cases = 0;
+        final List<String> errors = new ArrayList<>();
+        for (RotationOrder order : RotationOrder.values()) {
+            for (double[] a : ANGLES) {
+                final double[][] m = matrix(order, a);
+                final double[] q = quaternion(order, a);
+                for (boolean forward : new boolean[] {true, false}) {
+                    final double[] oq = forward ? q : new double[] {q[0], -q[1], -q[2], -q[3]};
+                    final TimeStampedAngularCoordinates seed = new TimeStampedAngularCoordinates(AbsoluteDate.J2000_EPOCH,
+                            new Rotation(oq[0], oq[1], oq[2], oq[3], false), new Vector3D(W), Vector3D.ZERO);
+                    for (boolean body : new boolean[] {true, false}) {
+                        final double[] expected = forward ? (body ? W : mv(transpose(m), W)) : scale(body ? W : mv(m, W), -1);
+                        for (boolean first : new boolean[] {true, false}) {
+                            for (AttitudeType type : new AttitudeType[] {AttitudeType.QUATERNION_ANGVEL, AttitudeType.EULER_ANGLE_ANGVEL}) {
+                                final double[] data = type.generateData(first, forward, order, body, seed);
+                                final boolean isQ = type == AttitudeType.QUATERNION_ANGVEL;
+                                final int start = isQ ? 4 : 3;
+                                final double error = distance(expected, new double[] {data[start], data[start + 1], data[start + 2]});
+                                final double matrixError = maxDiff(m, isQ ? quaternionMatrix(unordered(data, first)) : matrix(order, data));
+                                cases++;
+                                csv("generate", type + "," + order + "," + forward + "," + body + "," + first + "," + error + "," + matrixError);
+                                if (error > 3e-13 || matrixError > 3e-14) errors.add(type + " " + order + " forward=" + forward + " body=" + body + " rate=" + error + " matrix=" + matrixError);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        record("generated-angular-velocity", cases, errors);
+    }
+
+    @Test
     void originalAuthorFixtureBodyRate() {
         final String resource = "/ccsds/adm/aem/AEMExample14.txt";
         final Aem file = new ParserBuilder().buildAemParser().parseMessage(new DataSource(resource,
@@ -141,7 +174,7 @@ public class MathGraphAttitudeAuditTest {
         // The author's fourth segment explicitly declares ANGVEL_FRAME = SC_BODY_1.
         final Vector3D expected = new Vector3D(Math.toRadians(-0.021029),
                 Math.toRadians(0.023643), Math.toRadians(18.288407));
-        final Vector3D actual = file.getSegments().get(3).getAngularCoordinates().getFirst().getRotationRate();
+        final Vector3D actual = file.getSegments().get(3).getAngularCoordinates().get(0).getRotationRate();
         System.out.println("MATHGRAPH original-fixture expected=" + expected + " actual=" + actual +
                 " error-rad-s=" + expected.distance(actual));
         Assertions.assertEquals(0.0, expected.distance(actual), 1e-14);
@@ -150,9 +183,9 @@ public class MathGraphAttitudeAuditTest {
     @Test
     void defaultDirectionCompatibility() throws Exception {
         final AttitudeEndpoints implicit = parse(message(AttitudeType.QUATERNION_ANGVEL,
-                RotationOrder.XYZ, ANGLES[0], true, true)).getSegments().getFirst().getMetadata().getEndpoints();
+                RotationOrder.XYZ, ANGLES[0], true, true)).getSegments().get(0).getMetadata().getEndpoints();
         final AttitudeEndpoints explicit = parse(message(AttitudeType.QUATERNION_ANGVEL,
-                RotationOrder.XYZ, ANGLES[0], true, true)).getSegments().getFirst().getMetadata().getEndpoints();
+                RotationOrder.XYZ, ANGLES[0], true, true)).getSegments().get(0).getMetadata().getEndpoints();
         explicit.setA2b(true);
         Assertions.assertTrue(implicit.isA2b());
         Assertions.assertTrue(explicit.isA2b());
@@ -188,12 +221,12 @@ public class MathGraphAttitudeAuditTest {
     // CCSDS 504.0-B-2 Annex F3: M_BA = M_axis3(a3) M_axis2(a2) M_axis1(a1).
     private static double[][] elementary(char axis, double a) {
         double c = Math.cos(a), s = Math.sin(a);
-        return switch (axis) {
-            case 'X' -> new double[][] {{1,0,0},{0,c,s},{0,-s,c}};
-            case 'Y' -> new double[][] {{c,0,-s},{0,1,0},{s,0,c}};
-            case 'Z' -> new double[][] {{c,s,0},{-s,c,0},{0,0,1}};
-            default -> throw new IllegalArgumentException();
-        };
+        switch (axis) {
+            case 'X': return new double[][] {{1,0,0},{0,c,s},{0,-s,c}};
+            case 'Y': return new double[][] {{c,0,-s},{0,1,0},{s,0,c}};
+            case 'Z': return new double[][] {{c,s,0},{-s,c,0},{0,0,1}};
+            default: throw new IllegalArgumentException();
+        }
     }
     private static double[][] matrix(RotationOrder order, double[] a) {
         return mm(elementary(order.name().charAt(2), a[2]), mm(elementary(order.name().charAt(1), a[1]), elementary(order.name().charAt(0), a[0])));
@@ -252,7 +285,7 @@ public class MathGraphAttitudeAuditTest {
     private static double[] scale(double[] a,double s) {double[] r=a.clone();for(int i=0;i<r.length;i++)r[i]*=s;return r;}
     private static double maxDiff(double[][] a,double[][] b) {double e=0;for(int i=0;i<3;i++)for(int j=0;j<3;j++)e=Math.max(e,Math.abs(a[i][j]-b[i][j]));return e;}
     private static double distance(double[] a,double[] b) {double e=0;for(int i=0;i<3;i++)e+=(a[i]-b[i])*(a[i]-b[i]);return Math.sqrt(e);}
-    private static void csv(String group,String row) throws Exception {Files.writeString(Path.of("target/mathgraph-"+group+".csv"),row+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
+    private static void csv(String group,String row) throws Exception {Files.write(Paths.get("target/mathgraph-"+group+".csv"),(row+"\n").getBytes(StandardCharsets.UTF_8),StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
     private static void record(String name,int cases,List<String> errors) {
         System.out.println("MATHGRAPH " + name + " cases=" + cases + " discrepancies=" + errors.size());
         Assertions.assertTrue(errors.isEmpty(), () -> String.join("\n",errors.subList(0,Math.min(8,errors.size()))));
