@@ -24,7 +24,7 @@ jobs:
           a=6378137.
           def scalar(h):
               lat,lon,alt=pm.ecef2geodetic(a+h,0.,0.)
-              return abs(lat)<1e-7 and abs(lon)<1e-7 and abs(alt-h)<1e-4
+              return bool(abs(lat)<1e-7 and abs(lon)<1e-7 and abs(alt-h)<1e-4)
           def batch(h):
               h=np.array(h,dtype=float)
               try:
@@ -43,10 +43,11 @@ jobs:
           expected=os.environ['EXPECTED']=='fixed'
           assert all(mixed) if expected else not any(mixed)
           PY
+          cp ../probe.py ../evidence/
           for stage in before fixed; do
             if [ "$stage" = before ]; then git checkout --detach "$FIX^"; else git checkout --detach "$FIX"; fi
             git rev-parse HEAD | tee "../evidence/$stage.sha"
-            EXPECTED="$stage" PYTHONPATH="$PWD/src" python ../probe.py | tee "../evidence/$stage.log"
+            EXPECTED="$stage" PYTHONPATH="$PWD/src" python ../probe.py 2>&1 | tee "../evidence/$stage.log"
           done
           cp ../probe.py ../evidence/
       - uses: actions/upload-artifact@v4
