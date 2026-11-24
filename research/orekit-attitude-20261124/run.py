@@ -28,7 +28,9 @@ def command(args, cwd=ROOT, name=None):
         return result.returncode
     subprocess.run(args, cwd=cwd, check=True)
 
-command(["git", "clone", "--no-checkout", "--filter=blob:none", "https://github.com/CS-SI/Orekit.git", str(REPO)])
+command(["git", "init", str(REPO)])
+command(["git", "remote", "add", "origin", "https://github.com/CS-SI/Orekit.git"], REPO)
+command(["git", "fetch", "--depth=1", "origin", SOURCE], REPO)
 command(["git", "checkout", "--detach", SOURCE], REPO)
 assert subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip() == SOURCE
 settings = OUT / "maven-settings.xml"
