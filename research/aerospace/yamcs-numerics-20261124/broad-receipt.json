@@ -1,0 +1,155 @@
+{
+  "status": "QUALIFIED_BOUNDED_SELECTED_REACTOR",
+  "source": "4af5abd2b5d8535f77e902de717c77d657f0093e",
+  "harness_commit": "e58c466217f6a343566f3c7c597a72f6ff2b6df1",
+  "run_id": 45339330722,
+  "parent_run_id": 45337311923,
+  "boundary": "Default yamcs-core -am Maven reactor on Linux/JDK 17, 21 and 25. No whole-repository, cross-OS, operational or paid-demand warrant.",
+  "results": [
+    {
+      "jdk": "17",
+      "job_id": 138258906824,
+      "baseline": {
+        "exit": 0,
+        "jdk": "17",
+        "case_count": 1165,
+        "counts": {
+          "passed": 1151,
+          "skipped": 14
+        }
+      },
+      "repair": {
+        "exit": 0,
+        "jdk": "17",
+        "case_count": 1169,
+        "counts": {
+          "passed": 1155,
+          "skipped": 14
+        }
+      }
+    },
+    {
+      "jdk": "21",
+      "job_id": 138258906736,
+      "baseline": {
+        "exit": 0,
+        "jdk": "21",
+        "case_count": 1165,
+        "counts": {
+          "passed": 1151,
+          "skipped": 14
+        }
+      },
+      "repair": {
+        "exit": 0,
+        "jdk": "21",
+        "case_count": 1169,
+        "counts": {
+          "passed": 1155,
+          "skipped": 14
+        }
+      }
+    },
+    {
+      "jdk": "25",
+      "job_id": 138258906350,
+      "baseline": {
+        "exit": 0,
+        "jdk": "25",
+        "case_count": 1165,
+        "counts": {
+          "passed": 1151,
+          "skipped": 14
+        }
+      },
+      "repair": {
+        "exit": 0,
+        "jdk": "25",
+        "case_count": 1169,
+        "counts": {
+          "passed": 1155,
+          "skipped": 14
+        }
+      }
+    }
+  ],
+  "independent_replay": {
+    "status": "INDEPENDENT_REPLAY_PASS",
+    "boundary": "same default selected core reactor on Linux, three JDKs; outside repository modules and operational behavior unassessed",
+    "results": [
+      {
+        "jdk": "17",
+        "manifest_entries_verified": 976,
+        "original_cases": 1165,
+        "original_passed": 1151,
+        "original_skipped": 14,
+        "new_probe_tests": 4,
+        "native_matrices_independently_replayed": {
+          "integers.tsv": 1512,
+          "floats.tsv": 168,
+          "to-long.tsv": 21,
+          "consumer.tsv": 50
+        }
+      },
+      {
+        "jdk": "21",
+        "manifest_entries_verified": 976,
+        "original_cases": 1165,
+        "original_passed": 1151,
+        "original_skipped": 14,
+        "new_probe_tests": 4,
+        "native_matrices_independently_replayed": {
+          "integers.tsv": 1512,
+          "floats.tsv": 168,
+          "to-long.tsv": 21,
+          "consumer.tsv": 50
+        }
+      },
+      {
+        "jdk": "25",
+        "manifest_entries_verified": 976,
+        "original_cases": 1165,
+        "original_passed": 1151,
+        "original_skipped": 14,
+        "new_probe_tests": 4,
+        "native_matrices_independently_replayed": {
+          "integers.tsv": 1512,
+          "floats.tsv": 168,
+          "to-long.tsv": 21,
+          "consumer.tsv": 50
+        }
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "id": 14895643197,
+      "name": "yamcs-broad-jdk-21",
+      "size_bytes": 1591667,
+      "digest": "sha256:5ba6b5ea703721cdba3e45ab92212ada62b794a0e2085207ce8dabbc73b2e9a4",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/45339330722/artifacts/14895643197"
+    },
+    {
+      "id": 14895513343,
+      "name": "yamcs-broad-jdk-17",
+      "size_bytes": 1590809,
+      "digest": "sha256:cf8bff5c67cd9e190ef3b4f087738dc586d9d38865c93db608fe962193ab2c9d",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/45339330722/artifacts/14895513343"
+    },
+    {
+      "id": 14895104828,
+      "name": "yamcs-broad-jdk-25",
+      "size_bytes": 1597363,
+      "digest": "sha256:0c7c5b9a02a96a233c2631649996aba29496f10d0da00915d88706278858c13a",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/45339330722/artifacts/14895104828"
+    },
+    {
+      "id": 14894839363,
+      "name": "yamcs-broad-independent-replay",
+      "size_bytes": 524,
+      "digest": "sha256:aa02496b257bd613e5573e3d09c90ca6992558c5ec48fdd69659abace2949276",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/45339330722/artifacts/14894839363"
+    }
+  ],
+  "publication": "No upstream issue, PR or message submitted"
+}
