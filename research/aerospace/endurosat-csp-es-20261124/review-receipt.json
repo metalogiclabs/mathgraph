@@ -1,0 +1,180 @@
+{
+  "source_commit": "5ba0ccf66ec0301e65160b41e035cb8a7c916949",
+  "original_production_sha256": "eef9045714eef395b333903bfbd9d7a4bf07250f621c92906067696edcc266aa",
+  "candidate_production_sha256": "da94cb594889b06d917cf5892d15a26f73de5e2f916963fdfe6917f827d52c8f",
+  "patch_sha256": "0d4713b6756a2429102f0e8304b400fa389a43566cfe495539f8aa4537a17eea",
+  "compiler": "gcc (Debian 14.2.0-19) 14.2.0",
+  "scope": "GCC Linux x86-64, capacity10, static/shared, actual Check registrations; no hosted Clang job executed",
+  "results": {
+    "OFF": {
+      "before": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "failure",
+          "test_rtable_full_replaces_last": "failure",
+          "test_rtable_full_updates_existing": "failure"
+        },
+        "exit": 1,
+        "binary_sha256": "b6955fd65687bd832202c9a5d76693b0c087ae6d165ce4fb8305a64ad379af79"
+      },
+      "after": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "success",
+          "test_rtable_full_replaces_last": "success",
+          "test_rtable_full_updates_existing": "success"
+        },
+        "exit": 0,
+        "binary_sha256": "4072b53f3278847ef380af025bfb925701f21b777aa366d219a405c656c11319"
+      },
+      "withdrawn": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "failure",
+          "test_rtable_full_replaces_last": "failure",
+          "test_rtable_full_updates_existing": "failure"
+        },
+        "exit": 1,
+        "binary_sha256": "b6955fd65687bd832202c9a5d76693b0c087ae6d165ce4fb8305a64ad379af79"
+      },
+      "routing_disabled": {
+        "test_queue_free_707": "success",
+        "test_alloc_clean_734": "success",
+        "test_clone_frame_begin_fixed": "success",
+        "test_hmac_append_no_header": "success",
+        "test_hmac_append_include_header": "success",
+        "test_bind_no_listen_conn_less_764": "success",
+        "test_bind_no_listen_conn_764": "success",
+        "test_dedup_window": "success",
+        "test_dedup_oldest_entry_1036": "success",
+        "test_dedup_clock_wrap_1036": "success",
+        "test_csp_v2_header_golden_vector": "success",
+        "test_cfp2_can_golden_vector": "success"
+      }
+    },
+    "ON": {
+      "before": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "failure",
+          "test_rtable_full_replaces_last": "failure",
+          "test_rtable_full_updates_existing": "failure"
+        },
+        "exit": 1,
+        "binary_sha256": "4c09bb48688f65f0763f6e96e256991c9fbb98dc96d7d842ca4cbc2ff2e002ff"
+      },
+      "after": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "success",
+          "test_rtable_full_replaces_last": "success",
+          "test_rtable_full_updates_existing": "success"
+        },
+        "exit": 0,
+        "binary_sha256": "4c09bb48688f65f0763f6e96e256991c9fbb98dc96d7d842ca4cbc2ff2e002ff"
+      },
+      "withdrawn": {
+        "existing": {
+          "test_queue_free_707": "success",
+          "test_alloc_clean_734": "success",
+          "test_clone_frame_begin_fixed": "success",
+          "test_hmac_append_no_header": "success",
+          "test_hmac_append_include_header": "success",
+          "test_bind_no_listen_conn_less_764": "success",
+          "test_bind_no_listen_conn_764": "success",
+          "test_dedup_window": "success",
+          "test_dedup_oldest_entry_1036": "success",
+          "test_dedup_clock_wrap_1036": "success",
+          "test_csp_v2_header_golden_vector": "success",
+          "test_cfp2_can_golden_vector": "success"
+        },
+        "added": {
+          "test_rtable_last_entry_visible": "failure",
+          "test_rtable_full_replaces_last": "failure",
+          "test_rtable_full_updates_existing": "failure"
+        },
+        "exit": 1,
+        "binary_sha256": "4c09bb48688f65f0763f6e96e256991c9fbb98dc96d7d842ca4cbc2ff2e002ff"
+      },
+      "routing_disabled": {
+        "test_queue_free_707": "success",
+        "test_alloc_clean_734": "success",
+        "test_clone_frame_begin_fixed": "success",
+        "test_hmac_append_no_header": "success",
+        "test_hmac_append_include_header": "success",
+        "test_bind_no_listen_conn_less_764": "success",
+        "test_bind_no_listen_conn_764": "success",
+        "test_dedup_window": "success",
+        "test_dedup_oldest_entry_1036": "success",
+        "test_dedup_clock_wrap_1036": "success",
+        "test_csp_v2_header_golden_vector": "success",
+        "test_cfp2_can_golden_vector": "success"
+      }
+    }
+  }
+}

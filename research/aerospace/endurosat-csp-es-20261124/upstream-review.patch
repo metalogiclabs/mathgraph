@@ -1,0 +1,134 @@
+diff --git a/.github/workflows/unit-test.yml b/.github/workflows/unit-test.yml
+index 3e65a8c..3c2e1a1 100644
+--- a/.github/workflows/unit-test.yml
++++ b/.github/workflows/unit-test.yml
+@@ -40,7 +40,7 @@ jobs:
+       - name: Configure
+         env:
+           CC: ${{ matrix.cc }}
+-        run: cmake -GNinja -S . -B build
++        run: cmake -GNinja -S . -B build -DCSP_USE_RTABLE=ON
+ 
+       - name: Build unit tests
+         run: cmake --build build --target csp_tests
+diff --git a/src/csp_rtable_cidr.c b/src/csp_rtable_cidr.c
+index 551b58a..c727f4f 100644
+--- a/src/csp_rtable_cidr.c
++++ b/src/csp_rtable_cidr.c
+@@ -80,9 +80,10 @@ static int csp_rtable_set_internal(uint16_t address, uint16_t netmask, csp_iface
+ 
+ 	/* If not, create a new one */
+ 	if (!entry) {
+-		entry = &rtable[rtable_inptr++];
+-		if (rtable_inptr >= CSP_RTABLE_SIZE) {
+-			rtable_inptr = CSP_RTABLE_SIZE-1;
++		if (rtable_inptr < CSP_RTABLE_SIZE) {
++			entry = &rtable[rtable_inptr++];
++		} else {
++			entry = &rtable[CSP_RTABLE_SIZE - 1];
+ 		}
+ 	}
+ 
+diff --git a/unittests/route.c b/unittests/route.c
+index 1bf6d57..a47f5a8 100644
+--- a/unittests/route.c
++++ b/unittests/route.c
+@@ -1,5 +1,8 @@
+ #include <check.h>
+ #include "../include/csp/csp.h"
++#if CSP_USE_RTABLE
++#include "../include/csp/csp_rtable.h"
++#endif
+ 
+ #define TEST_PORT 10
+ 
+@@ -82,12 +85,89 @@ START_TEST(test_bind_no_listen_conn_764)
+ }
+ END_TEST
+ 
++#if CSP_USE_RTABLE
++/* A full table replaces its last entry, as discussed in issue #350.
++ * Its active count must still include that slot. */
++static csp_iface_t rtable_test_iface = {.name = "TEST"};
++
++static bool count_route(void * ctx, csp_route_t * route) {
++
++	(void)route;
++	(*(unsigned int *)ctx)++;
++	return true;
++}
++
++static unsigned int count_routes(void) {
++
++	unsigned int count = 0;
++	csp_rtable_iterate(count_route, &count);
++	return count;
++}
++
++static void fill_rtable(void) {
++
++	csp_conf.version = 2;
++	csp_rtable_free();
++	for (unsigned int i = 1; i <= CSP_RTABLE_SIZE; i++) {
++		ck_assert_int_eq(csp_rtable_set(i, -1, &rtable_test_iface, CSP_NO_VIA_ADDRESS), CSP_ERR_NONE);
++	}
++}
++
++START_TEST(test_rtable_last_entry_visible)
++{
++	fill_rtable();
++
++	ck_assert_uint_eq(count_routes(), CSP_RTABLE_SIZE);
++	for (unsigned int i = 1; i <= CSP_RTABLE_SIZE; i++) {
++		csp_route_t * route = csp_rtable_find_route(i);
++		ck_assert_ptr_nonnull(route);
++		ck_assert_uint_eq(route->address, i);
++		ck_assert_ptr_eq(route->iface, &rtable_test_iface);
++	}
++}
++END_TEST
++
++START_TEST(test_rtable_full_replaces_last)
++{
++	fill_rtable();
++
++	ck_assert_int_eq(csp_rtable_set(CSP_RTABLE_SIZE + 1, -1, &rtable_test_iface, CSP_NO_VIA_ADDRESS), CSP_ERR_NONE);
++	ck_assert_uint_eq(count_routes(), CSP_RTABLE_SIZE);
++	ck_assert_ptr_null(csp_rtable_find_route(CSP_RTABLE_SIZE));
++	ck_assert_ptr_nonnull(csp_rtable_find_route(CSP_RTABLE_SIZE + 1));
++	for (unsigned int i = 1; i < CSP_RTABLE_SIZE; i++) {
++		ck_assert_ptr_nonnull(csp_rtable_find_route(i));
++	}
++}
++END_TEST
++
++START_TEST(test_rtable_full_updates_existing)
++{
++	fill_rtable();
++
++	ck_assert_int_eq(csp_rtable_set(1, -1, &rtable_test_iface, 7), CSP_ERR_NONE);
++	ck_assert_uint_eq(count_routes(), CSP_RTABLE_SIZE);
++	csp_route_t * updated = csp_rtable_find_route(1);
++	ck_assert_ptr_nonnull(updated);
++	ck_assert_uint_eq(updated->via, 7);
++	for (unsigned int i = 1; i <= CSP_RTABLE_SIZE; i++) {
++		ck_assert_ptr_nonnull(csp_rtable_find_route(i));
++	}
++}
++END_TEST
++#endif
++
+ Suite * route_suite(void) {
+ 	Suite *s = suite_create("route");
+ 
+ 	TCase *tc = tcase_create("route");
+ 	tcase_add_test(tc, test_bind_no_listen_conn_less_764);
+ 	tcase_add_test(tc, test_bind_no_listen_conn_764);
++#if CSP_USE_RTABLE
++	tcase_add_test(tc, test_rtable_last_entry_visible);
++	tcase_add_test(tc, test_rtable_full_replaces_last);
++	tcase_add_test(tc, test_rtable_full_updates_existing);
++#endif
+ 
+ 	suite_add_tcase(s, tc);
+ 

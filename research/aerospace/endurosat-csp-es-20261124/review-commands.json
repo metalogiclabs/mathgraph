@@ -1,0 +1,238 @@
+[
+  {
+    "label": "review-OFF-configure",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCSP_USE_RTABLE=ON",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DCMAKE_C_FLAGS=-I/workspace/scratch/0e0b2d02ebfd/libcheck-installed/include",
+      "-DCMAKE_EXE_LINKER_FLAGS=-L/workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-OFF-before-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-OFF-before-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 1
+  },
+  {
+    "label": "review-OFF-after-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-OFF-after-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-OFF-withdrawn-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-OFF-withdrawn-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-OFF/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 1
+  },
+  {
+    "label": "review-disabled-OFF-configure",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-OFF",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCSP_USE_RTABLE=OFF",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DCMAKE_C_FLAGS=-I/workspace/scratch/0e0b2d02ebfd/libcheck-installed/include",
+      "-DCMAKE_EXE_LINKER_FLAGS=-L/workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-disabled-OFF-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-OFF",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-disabled-OFF-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-OFF/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-configure",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCSP_USE_RTABLE=ON",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DBUILD_SHARED_LIBS=ON",
+      "-DCMAKE_C_FLAGS=-I/workspace/scratch/0e0b2d02ebfd/libcheck-installed/include",
+      "-DCMAKE_EXE_LINKER_FLAGS=-L/workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-before-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-before-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 1
+  },
+  {
+    "label": "review-ON-after-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-after-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-withdrawn-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-ON-withdrawn-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-ON/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 1
+  },
+  {
+    "label": "review-disabled-ON-configure",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-ON",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCSP_USE_RTABLE=OFF",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DBUILD_SHARED_LIBS=ON",
+      "-DCMAKE_C_FLAGS=-I/workspace/scratch/0e0b2d02ebfd/libcheck-installed/include",
+      "-DCMAKE_EXE_LINKER_FLAGS=-L/workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-disabled-ON-build",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-ON",
+      "-j",
+      "2",
+      "--target",
+      "csp_tests"
+    ],
+    "exit": 0
+  },
+  {
+    "label": "review-disabled-ON-tests",
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/build-review-disabled-ON/unittests/csp_tests",
+      "--verbose"
+    ],
+    "exit": 0
+  }
+]

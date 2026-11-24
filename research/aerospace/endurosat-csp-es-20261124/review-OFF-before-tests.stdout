@@ -1,0 +1,22 @@
+Running suite(s): Queue
+ Packet Buffer
+ HMAC
+ route
+ Deduplication
+ Wire format
+80%: Checks: 15, Failures: 3, Errors: 0
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/queue.c:29:P:free:test_queue_free_707:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/buffer.c:31:P:allocate:test_alloc_clean_734:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/buffer.c:65:P:allocate:test_clone_frame_begin_fixed:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/hmac.c:23:P:append:test_hmac_append_no_header:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/hmac.c:47:P:append:test_hmac_append_include_header:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/route.c:52:P:route:test_bind_no_listen_conn_less_764:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/route.c:82:P:route:test_bind_no_listen_conn_764:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/route.c:120:F:route:test_rtable_last_entry_visible:0: Assertion 'count_routes() == 10' failed: count_routes() == 9, 10 == 10
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/route.c:135:F:route:test_rtable_full_replaces_last:0: Assertion 'count_routes() == 10' failed: count_routes() == 9, 10 == 10
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/route.c:149:F:route:test_rtable_full_updates_existing:0: Assertion 'count_routes() == 10' failed: count_routes() == 9, 10 == 10
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/dedup.c:81:P:search:test_dedup_window:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/dedup.c:102:P:search:test_dedup_oldest_entry_1036:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/dedup.c:121:P:search:test_dedup_clock_wrap_1036:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/wire.c:58:P:golden vectors:test_csp_v2_header_golden_vector:0: Passed
+/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests/wire.c:104:P:golden vectors:test_cfp2_can_golden_vector:0: Passed

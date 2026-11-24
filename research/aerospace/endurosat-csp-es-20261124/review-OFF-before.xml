@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="http://check.sourceforge.net/xml/check_unittest.xslt"?>
+<testsuites xmlns="http://check.sourceforge.net/ns">
+  <datetime>2026-11-24 20:25:41</datetime>
+  <suite>
+    <title>Queue</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>queue.c:29</fn>
+      <id>test_queue_free_707</id>
+      <iteration>0</iteration>
+      <duration>0.000031</duration>
+      <description>free</description>
+      <message>Passed</message>
+    </test>
+  </suite>
+  <suite>
+    <title>Packet Buffer</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>buffer.c:31</fn>
+      <id>test_alloc_clean_734</id>
+      <iteration>0</iteration>
+      <duration>0.000101</duration>
+      <description>allocate</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>buffer.c:65</fn>
+      <id>test_clone_frame_begin_fixed</id>
+      <iteration>0</iteration>
+      <duration>0.000026</duration>
+      <description>allocate</description>
+      <message>Passed</message>
+    </test>
+  </suite>
+  <suite>
+    <title>HMAC</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>hmac.c:23</fn>
+      <id>test_hmac_append_no_header</id>
+      <iteration>0</iteration>
+      <duration>0.000048</duration>
+      <description>append</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>hmac.c:47</fn>
+      <id>test_hmac_append_include_header</id>
+      <iteration>0</iteration>
+      <duration>0.000051</duration>
+      <description>append</description>
+      <message>Passed</message>
+    </test>
+  </suite>
+  <suite>
+    <title>route</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>route.c:52</fn>
+      <id>test_bind_no_listen_conn_less_764</id>
+      <iteration>0</iteration>
+      <duration>0.000071</duration>
+      <description>route</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>route.c:82</fn>
+      <id>test_bind_no_listen_conn_764</id>
+      <iteration>0</iteration>
+      <duration>0.000182</duration>
+      <description>route</description>
+      <message>Passed</message>
+    </test>
+    <test result="failure">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>route.c:120</fn>
+      <id>test_rtable_last_entry_visible</id>
+      <iteration>0</iteration>
+      <duration>-1.000000</duration>
+      <description>route</description>
+      <message>Assertion &apos;count_routes() == 10&apos; failed: count_routes() == 9, 10 == 10</message>
+    </test>
+    <test result="failure">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>route.c:135</fn>
+      <id>test_rtable_full_replaces_last</id>
+      <iteration>0</iteration>
+      <duration>-1.000000</duration>
+      <description>route</description>
+      <message>Assertion &apos;count_routes() == 10&apos; failed: count_routes() == 9, 10 == 10</message>
+    </test>
+    <test result="failure">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>route.c:149</fn>
+      <id>test_rtable_full_updates_existing</id>
+      <iteration>0</iteration>
+      <duration>-1.000000</duration>
+      <description>route</description>
+      <message>Assertion &apos;count_routes() == 10&apos; failed: count_routes() == 9, 10 == 10</message>
+    </test>
+  </suite>
+  <suite>
+    <title>Deduplication</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>dedup.c:81</fn>
+      <id>test_dedup_window</id>
+      <iteration>0</iteration>
+      <duration>0.000105</duration>
+      <description>search</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>dedup.c:102</fn>
+      <id>test_dedup_oldest_entry_1036</id>
+      <iteration>0</iteration>
+      <duration>0.000042</duration>
+      <description>search</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>dedup.c:121</fn>
+      <id>test_dedup_clock_wrap_1036</id>
+      <iteration>0</iteration>
+      <duration>0.000027</duration>
+      <description>search</description>
+      <message>Passed</message>
+    </test>
+  </suite>
+  <suite>
+    <title>Wire format</title>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>wire.c:58</fn>
+      <id>test_csp_v2_header_golden_vector</id>
+      <iteration>0</iteration>
+      <duration>0.000026</duration>
+      <description>golden vectors</description>
+      <message>Passed</message>
+    </test>
+    <test result="success">
+      <path>/workspace/scratch/0e0b2d02ebfd/libcsp-route-review/unittests</path>
+      <fn>wire.c:104</fn>
+      <id>test_cfp2_can_golden_vector</id>
+      <iteration>0</iteration>
+      <duration>0.000045</duration>
+      <description>golden vectors</description>
+      <message>Passed</message>
+    </test>
+  </suite>
+  <duration>0.006348</duration>
+</testsuites>
