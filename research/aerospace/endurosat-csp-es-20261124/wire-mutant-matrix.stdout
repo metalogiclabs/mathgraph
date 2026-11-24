@@ -1,0 +1,1 @@
+{"requests": 1924, "encodes": 952, "independent_decodes": 952, "short_header_controls": 20, "native_roundtrips_passed": 952, "golden_discrepancies": 712, "input_sha256": "4ea72e03c5d22e1a649267791a4622a9501ca9f01a9a065b5b08eada1ea3829d", "output_sha256": "551e8a84ad439dc4d2379747e5b1b4026a747ae10a16681373cbeceef3e92f4b"}

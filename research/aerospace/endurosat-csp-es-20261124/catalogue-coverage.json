@@ -163,8 +163,8 @@
     {
       "id": 27,
       "title": "Requirement consistency",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Current success/capacity contract and downstream lookup disagree; prior last-slot replacement interpretation explicitly admitted."
     },
     {
       "id": 28,
@@ -187,8 +187,8 @@
     {
       "id": 31,
       "title": "Definitions",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Capacity is treated as both active-count bound and replaceable-slot index; native observations separate them."
     },
     {
       "id": 32,
@@ -206,7 +206,7 @@
       "id": 34,
       "title": "Encoding",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Source inspected for header packing; no independent wire-format experiment executed."
+      "note": "952 selected golden-byte encodes and 952 independent decodes pass for each of the system/portable endian builds; no exhaustive or 16-bit claim."
     },
     {
       "id": 35,
@@ -319,14 +319,14 @@
     {
       "id": 53,
       "title": "Interfaces",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Native routing-table producer reports success while lookup and iterator consumers omit the inserted route."
     },
     {
       "id": 54,
       "title": "Implementation",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Actual two upstream/fork CMake libraries and original author tests executed in intervention and withdrawal arms."
     },
     {
       "id": 55,
@@ -356,13 +356,13 @@
       "id": 59,
       "title": "Test oracle",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Unbounded integer elapsed-time and finite-ring oracle specified independently."
+      "note": "Separate bit-concatenation header oracle and ordered finite-table oracle; the latter adopts maintainer-confirmed replacement semantics."
     },
     {
       "id": 60,
       "title": "Test execution",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Actual 22 author tests and three upstream tests executed; raw outputs retained."
+      "note": "22 fork and 12 upstream original tests remain green under a witnessed current routing discrepancy."
     },
     {
       "id": 61,
@@ -391,8 +391,8 @@
     {
       "id": 65,
       "title": "Identity",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Exact pinned fork/upstream subjects distinguished; shared code does not make two independent discoveries."
     },
     {
       "id": 66,
@@ -403,8 +403,8 @@
     {
       "id": 67,
       "title": "Equivalence",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Header fields preserve declared identity across selected encode/decode cases in both real endian implementations."
     },
     {
       "id": 68,
@@ -446,13 +446,13 @@
       "id": 74,
       "title": "Oracle independence",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Python oracle does not reproduce implementation's expiry expression; same researcher is not third-party validation."
+      "note": "Golden decode inputs do not come from the actual encoder; layout authority is the project source diagrams. Routing oracle uses a separately written finite-list model."
     },
     {
       "id": 75,
       "title": "Common-mode failure",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Injected source/destination swap in both codec directions preserves all 952 round trips while violating 712 golden expectations; sensitivity control only."
     },
     {
       "id": 76,
@@ -541,14 +541,14 @@
     {
       "id": 90,
       "title": "Evidence transport",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "Known dedup upstream correction was qualified against the fork. New route discrepancy separately executes both actual implementations."
     },
     {
       "id": 91,
       "title": "Composition",
-      "status": "UNASSESSED",
-      "note": "Not assessed in this bounded dedup backport iteration."
+      "status": "SCOPED_ASSESSMENT",
+      "note": "A successful route insertion does not supply lookup/iteration postconditions at the last slot."
     },
     {
       "id": 92,
@@ -584,7 +584,7 @@
       "id": 97,
       "title": "Numerics",
       "status": "SCOPED_ASSESSMENT",
-      "note": "uint32 timestamp wrap and ring iteration examined."
+      "note": "Original selected host header arithmetic passed; source active-count/last-slot off-by-one witnessed at capacities 1,2,10."
     },
     {
       "id": 98,
@@ -608,7 +608,7 @@
       "id": 101,
       "title": "Input coverage",
       "status": "SCOPED_ASSESSMENT",
-      "note": "240 selected cases; arbitrary payloads, cycles, targets and integrations remain unqualified."
+      "note": "Selected 1924 codec requests and 114 route observations per source; whole-project, hardware and exhaustive domains remain unqualified."
     },
     {
       "id": 102,
@@ -620,13 +620,16 @@
       "id": 103,
       "title": "Maintenance and evolution",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Fork divergence and existing upstream fix identified."
+      "note": "Related #350 and 2025 5f8f0d07 history retained; current mechanism is not relabeled as an unrelated discovery."
     },
     {
       "id": 104,
       "title": "Value",
       "status": "SCOPED_ASSESSMENT",
-      "note": "Reviewable backport qualified; buyer demand, collaboration interest and comparative advantage UNKNOWN."
+      "note": "Attributed backport and focused routing repair are reviewable. Upstream contribution channel is clearer than company fork; paid demand and comparative superiority UNKNOWN."
     }
-  ]
+  ],
+  "iteration": "dedup backport, golden-header negative result, route last-slot visibility",
+  "assessed_count": 42,
+  "unassessed_count": 62
 }

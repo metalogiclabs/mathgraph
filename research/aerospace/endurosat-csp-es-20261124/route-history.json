@@ -1,0 +1,491 @@
+{
+  "related_issue": {
+    "issue": {
+      "id": 1189757895,
+      "url": "https://github.com/libcsp/libcsp/issues/350",
+      "title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE",
+      "issue_number": 350,
+      "body": "Following \"if\" statement found on csp_rtable_cidr.c:67 seems to be somehow broken/illogical.\r\n\r\n```\r\nif (rtable_inptr == CSP_RTABLE_SIZE)\r\n  rtable_inptr = CSP_RTABLE_SIZE;\r\n```\r\n\r\nSince this is the only place where `rtable_inptr` is increased I'm assuming that the idea was to move this check one line above to prevent having this counter overflowing maximum table size.",
+      "state": "closed",
+      "user": {
+        "login": "valerijbielskij",
+        "name": "valerijbielskij",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/1420514?v=4",
+        "id": 1420514
+      },
+      "assignees": null,
+      "labels": [
+        {
+          "name": "Defect",
+          "color": "eb6420",
+          "description": null
+        },
+        {
+          "name": "Low",
+          "color": "02e10c",
+          "description": null
+        }
+      ],
+      "milestone": null,
+      "state_reason": "completed",
+      "comments": 3,
+      "created_at": "2022-04-01T12:57:02Z",
+      "updated_at": "2022-05-01T07:28:09Z",
+      "closed_at": "2022-05-01T07:28:09Z",
+      "display_url": "https://github.com/libcsp/libcsp/issues/350",
+      "display_title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE"
+    },
+    "url": "https://github.com/libcsp/libcsp/issues/350",
+    "title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE",
+    "display_url": "https://github.com/libcsp/libcsp/issues/350",
+    "display_title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE"
+  },
+  "related_comments": {
+    "comments": [
+      {
+        "url": "https://github.com/libcsp/libcsp/issues/350#issuecomment-1090488819",
+        "body": "Thanks for that report\r\nIt should have been >= instead",
+        "user": {
+          "login": "johandc",
+          "name": "johandc",
+          "email": null,
+          "avatar_url": "https://avatars.githubusercontent.com/u/545264?v=4",
+          "id": 545264
+        },
+        "id": 1090488819,
+        "pull_request_review_id": null,
+        "in_reply_to_id": null,
+        "created_at": null,
+        "updated_at": null,
+        "review": null,
+        "side": null,
+        "line": null,
+        "start_line": null,
+        "path": null,
+        "body_html": "<p dir=\"auto\">Thanks for that report<br>\nIt should have been &gt;= instead</p>"
+      },
+      {
+        "url": "https://github.com/libcsp/libcsp/issues/350#issuecomment-1091106789",
+        "body": "So the idea was to override the last entry in the list? Probably I would have expected that it would return CSP_ERR_INVAL in such case but I don't have strong opinion about it.",
+        "user": {
+          "login": "valerijbielskij",
+          "name": "valerijbielskij",
+          "email": null,
+          "avatar_url": "https://avatars.githubusercontent.com/u/1420514?v=4",
+          "id": 1420514
+        },
+        "id": 1091106789,
+        "pull_request_review_id": null,
+        "in_reply_to_id": null,
+        "created_at": null,
+        "updated_at": null,
+        "review": null,
+        "side": null,
+        "line": null,
+        "start_line": null,
+        "path": null,
+        "body_html": "<p dir=\"auto\">So the idea was to override the last entry in the list? Probably I would have expected that it would return CSP_ERR_INVAL in such case but I don't have strong opinion about it.</p>"
+      },
+      {
+        "url": "https://github.com/libcsp/libcsp/issues/350#issuecomment-1092222612",
+        "body": "Yes. I think the most recent entry should at least be accepted, in a safe manner. This way it should always be possible to setup a direct route in an emergency.\r\n\r\nHowever I have recently gone over to using a simple array of numbers for the routing table. This makes it even simpler to configure and does not require any string work.",
+        "user": {
+          "login": "johandc",
+          "name": "johandc",
+          "email": null,
+          "avatar_url": "https://avatars.githubusercontent.com/u/545264?v=4",
+          "id": 545264
+        },
+        "id": 1092222612,
+        "pull_request_review_id": null,
+        "in_reply_to_id": null,
+        "created_at": null,
+        "updated_at": null,
+        "review": null,
+        "side": null,
+        "line": null,
+        "start_line": null,
+        "path": null,
+        "body_html": "<p dir=\"auto\">Yes. I think the most recent entry should at least be accepted, in a safe manner. This way it should always be possible to setup a direct route in an emergency.</p>\n<p dir=\"auto\">However I have recently gone over to using a simple array of numbers for the routing table. This makes it even simpler to configure and does not require any string work.</p>"
+      }
+    ],
+    "url": "https://github.com/libcsp/libcsp/issues/350",
+    "title": "libcsp/libcsp Issue #350 comments",
+    "display_url": "https://github.com/libcsp/libcsp/issues/350",
+    "display_title": "libcsp/libcsp Issue #350 comments"
+  },
+  "change_2025": {
+    "sha": "5f8f0d07b7cafabde56c26cf086d7d98343555f2",
+    "node_id": "C_kwDOACahvNoAKDVmOGYwZDA3YjdjYWZhYmRlNTZjMjZjZjA4NmQ3ZDk4MzQzNTU1ZjI",
+    "commit": {
+      "author": {
+        "name": "kevin",
+        "email": "kevin.carlsen@space-inventor.com",
+        "date": "2025-07-31T08:22:33Z"
+      },
+      "committer": {
+        "name": "Johan De Claville Christiansen",
+        "email": "johan@claville.dk",
+        "date": "2026-02-16T16:20:23Z"
+      },
+      "message": "Fix off-by-one in `csp_rtable_set()`\n\nWe should consider actually returning an error.\nInstead we still just override the last available route,\nwhich seems to have been the previous intention.\n\nCo-authored-by: edvard <edvard@space-inventor.com>",
+      "tree": {
+        "sha": "1df532ddf219c9d75819d461cbddcd67f1595ea1",
+        "url": "https://api.github.com/repos/libcsp/libcsp/git/trees/1df532ddf219c9d75819d461cbddcd67f1595ea1"
+      },
+      "url": "https://api.github.com/repos/libcsp/libcsp/git/commits/5f8f0d07b7cafabde56c26cf086d7d98343555f2",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/libcsp/libcsp/commits/5f8f0d07b7cafabde56c26cf086d7d98343555f2",
+    "html_url": "https://github.com/libcsp/libcsp/commit/5f8f0d07b7cafabde56c26cf086d7d98343555f2",
+    "comments_url": "https://api.github.com/repos/libcsp/libcsp/commits/5f8f0d07b7cafabde56c26cf086d7d98343555f2/comments",
+    "author": {
+      "login": "kivkiv12345",
+      "id": 57446369,
+      "node_id": "MDQ6VXNlcjU3NDQ2MzY5",
+      "avatar_url": "https://avatars.githubusercontent.com/u/57446369?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/kivkiv12345",
+      "html_url": "https://github.com/kivkiv12345",
+      "followers_url": "https://api.github.com/users/kivkiv12345/followers",
+      "following_url": "https://api.github.com/users/kivkiv12345/following{/other_user}",
+      "gists_url": "https://api.github.com/users/kivkiv12345/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/kivkiv12345/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/kivkiv12345/subscriptions",
+      "organizations_url": "https://api.github.com/users/kivkiv12345/orgs",
+      "repos_url": "https://api.github.com/users/kivkiv12345/repos",
+      "events_url": "https://api.github.com/users/kivkiv12345/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/kivkiv12345/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "johandc",
+      "id": 545264,
+      "node_id": "MDQ6VXNlcjU0NTI2NA==",
+      "avatar_url": "https://avatars.githubusercontent.com/u/545264?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/johandc",
+      "html_url": "https://github.com/johandc",
+      "followers_url": "https://api.github.com/users/johandc/followers",
+      "following_url": "https://api.github.com/users/johandc/following{/other_user}",
+      "gists_url": "https://api.github.com/users/johandc/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/johandc/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/johandc/subscriptions",
+      "organizations_url": "https://api.github.com/users/johandc/orgs",
+      "repos_url": "https://api.github.com/users/johandc/repos",
+      "events_url": "https://api.github.com/users/johandc/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/johandc/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "192568acc0e6ef29be6ad3b3a0163af4e3580935",
+        "url": "https://api.github.com/repos/libcsp/libcsp/commits/192568acc0e6ef29be6ad3b3a0163af4e3580935",
+        "html_url": "https://github.com/libcsp/libcsp/commit/192568acc0e6ef29be6ad3b3a0163af4e3580935"
+      }
+    ],
+    "stats": {
+      "total": 4,
+      "additions": 2,
+      "deletions": 2
+    },
+    "files": [
+      {
+        "sha": "551b58ab71c5517fab55d3b3f3ddc77b3ab36df4",
+        "filename": "src/csp_rtable_cidr.c",
+        "status": "modified",
+        "additions": 2,
+        "deletions": 2,
+        "changes": 4,
+        "blob_url": "https://github.com/libcsp/libcsp/blob/5f8f0d07b7cafabde56c26cf086d7d98343555f2/src%2Fcsp_rtable_cidr.c",
+        "raw_url": "https://github.com/libcsp/libcsp/raw/5f8f0d07b7cafabde56c26cf086d7d98343555f2/src%2Fcsp_rtable_cidr.c",
+        "contents_url": "https://api.github.com/repos/libcsp/libcsp/contents/src%2Fcsp_rtable_cidr.c?ref=5f8f0d07b7cafabde56c26cf086d7d98343555f2",
+        "patch": "@@ -81,8 +81,8 @@ static int csp_rtable_set_internal(uint16_t address, uint16_t netmask, csp_iface\n \t/* If not, create a new one */\n \tif (!entry) {\n \t\tentry = &rtable[rtable_inptr++];\n-\t\tif (rtable_inptr > CSP_RTABLE_SIZE) {\n-\t\t\trtable_inptr = CSP_RTABLE_SIZE;\n+\t\tif (rtable_inptr >= CSP_RTABLE_SIZE) {\n+\t\t\trtable_inptr = CSP_RTABLE_SIZE-1;\n \t\t}\n \t}\n "
+      }
+    ]
+  },
+  "targeted_searches": [
+    {
+      "query_index": 0,
+      "result": {
+        "issues": [
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/544",
+            "title": "build: differences in cmake, meson and waf ",
+            "issue_number": 544,
+            "body": "It seems like there are some differences in building `csp_rtable_cidr.c` and `csp_rtable_stdio.c`. \r\nIn CMake and Waf everything looks identical, but Meson's build is slightly different:\r\n\r\nIn `src/meson.build`:\r\n```\r\nif get_option('have_stdio') and get_option('use_rtable')\r\n\tcsp_sources += files('csp_rtable_stdio.c')\r\nendif\r\n\r\nif get_option('use_rtable')\r\n\tcsp_sources += files('csp_rtable_cidr.c')\r\nendif\r\n```\r\n\r\nIn `src/CMakeLists.txt`:\r\n```\r\ntarget_sources(csp PRIVATE\r\n  ...\r\n  csp_rtable_cidr.c\r\n  ...\r\n)\r\n...\r\nif (CSP_HAVE_STDIO)\r\n  target_sources(csp PRIVATE csp_rtable_stdio.c)\r\nendif()\r\n```\r\n\r\nIn `wscript`:\r\n```\r\n    ctx.env.append_unique('FILES_CSP', [...,\r\n                                        'src/csp_rtable_cidr.c'])\r\n\r\n    # Add if stdio\r\n    if ctx.check(header_name=\"stdio.h\", mandatory=False):\r\n        ctx.define('CSP_HAVE_STDIO', True)\r\n        ctx.env.append_unique('FILES_CSP', ['src/csp_rtable_stdio.c'])\r\n```",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/544",
+            "display_title": "build: differences in cmake, meson and waf "
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/350",
+            "title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE",
+            "issue_number": 350,
+            "body": "Following \"if\" statement found on csp_rtable_cidr.c:67 seems to be somehow broken/illogical.\r\n\r\n```\r\nif (rtable_inptr == CSP_RTABLE_SIZE)\r\n  rtable_inptr = CSP_RTABLE_SIZE;\r\n```\r\n\r\nSince this is the only place where `rtable_inptr` is increased I'm assuming that the idea was to move this check one line above to prevent having this counter overflowing maximum table size.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/350",
+            "display_title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/295",
+            "title": "Remove queue and semaphore",
+            "issue_number": 295,
+            "body": "Okay here is a biggie, but hear me out.\r\n\r\nI believe it is possible to get rid of mutex, by using atomics. Generally this has been easy to figure out. And it saves a Lot of system call work, and works with hardware instructions on most modern platforms. \r\n(We do still use it one more place which is on the uart driver i believe. )\r\n\r\nAs for semaphore, we have one use in zmqhub where it's used as a tread guard, because libzmq isn't threadsafe. Here multiple threads are contesting one object. Which is a nice case for a mutex actually. However since zmqhub is Linux only, I feel like this should be solved better somehow. Maybe a Linux specific method.\r\n\r\n\r\nThe final place where semaphore is used in rdp to take the tx task when more work needs to be done. For this where only one task is to be woken. We should be able to do it with a simple wake callback on the conn object. Similarly we need a sleep callback I'm order to suspend the tx task. This is simple and avoids a lot. And of the user wants he can simply ignore sleeping and waking and use polling instead.\r\n\r\nI believe we can use something similar instead of the RX queue object for the router task to wait on. By replacing the synchronization of the router task and the input foto, with the aforementioned sleep and wake callbacks we can pretty much get rid of queues too. \r\n\r\nOf course CSP would still rely on queueing. But it's not os dependant any longer. And can be made using simple ringbuffers. \r\n\r\nThis is a lot to take on. But i believe it would work. So CSP could actually operate completely without an OS. Neat huh.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/295",
+            "display_title": "Remove queue and semaphore"
+          }
+        ]
+      }
+    },
+    {
+      "query_index": 1,
+      "result": {
+        "issues": [
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/1009",
+            "title": "csp_conn atomics (LR/SC + AMO) raise access faults on targets without atomic support in the backing memory (e.g. TCM/scratchpad RAM); silent hang on first csp_connect()",
+            "issue_number": 1009,
+            "body": "## Description\n\n`csp_conn.c` uses C11 atomics for connection slot management:\n`atomic_compare_exchange_strong()` in `csp_conn_allocate()` and\nseq-cst stores to the `atomic_int` fields (`state`, `type`) declared in\n`csp_conn.h`.\n\nOn RV64 (GCC), these compile to `lr.w`/`sc.w` and `amoswap.w`\nrespectively. These instructions require the memory system to support\nreservations/AMOs, which on SiFive-derived cores (e.g. the U54 in\nMicrochip PolarFire SoC) is only available for cacheable regions. When\n`arr_conn` is linked into a non-cacheable scratchpad region (PolarFire\nL2-LIM, and generally any TCM-class RAM), the first `lr.w` raises a\nprecise access fault -- a synchronous exception -- with a single caller\nand zero contention.\n\nBecause the fault is synchronous and occurs inside CSP with no error\npath, the practical symptom is a silent hard hang of the node on the\nfirst `csp_connect()` (the RTOS trap handler re-enters forever). No\nCSP error is observable.\n\nThis is a class problem, not board-specific: any deployment placing\nCSP state in TCM/scratchpad on cores where atomics require cacheable\nmemory is affected. Additionally, ARMv6-M cores (Cortex-M0/M0+) have\nno CAS hardware at all, so `atomic_compare_exchange_strong` cannot be\nimplemented natively there either.\n\nQuestion/proposal: would you accept a PR that guards the slot claim\nand state/type updates with the arch layer's critical-section\nprimitive (interrupt-disable on single-core targets) instead of C11\natomics, or makes the mechanism selectable per platform? The protected\nregion is a load, a compare and a store. We are running such a patch\nlocally on RV64/FreeRTOS and Cortex-M0+ nodes.\n\nThis patch was suggested by AI, we would also like a fix that would \nwork around this without having to change the official CSP files \n\n## Steps to Reproduce\n\n1. Build libcsp v2.1 for a FreeRTOS target where `arr_conn` links into\n   RAM without LR/SC/AMO support. Concrete case: PolarFire SoC Icicle\n   Kit, all sections in L2-LIM (`> l2lim` in the linker script),\n   `CSP_FREERTOS=1`, GCC 8.3 `riscv64-unknown-elf`, `-march=rv64gc`.\n2. Initialise CSP (`csp_init()`, register an interface, bind the\n   service handler, start `csp_route_work()` in a task).\n3. Call `csp_ping(<own address>, 1000, 10, CSP_O_CRC32)` (any\n   `csp_connect()` path reproduces it).\n\nMinimal application snippet:\n\n```c\ncsp_init();\nxSelfIface.name    = \"SELF\";\nxSelfIface.addr    = 1;\nxSelfIface.netmask = csp_id_get_host_bits();\nxSelfIface.nexthop = self_tx;                  /* csp_qfifo_write(p, i, NULL) */\ncsp_iflist_add(&xSelfIface);\ncsp_bind_callback(csp_service_handler, CSP_ANY);\n/* router task runs csp_route_work() in a loop */\nint ms = csp_ping(1, 1000, 10, CSP_O_CRC32);   /* never returns */\n```\n\n## Expected behavior\n\n`csp_connect()` allocates a connection; `csp_ping()` returns the\nround-trip time (loopback), or at worst an error code.\n\n## Actual Behavior\n\nThe hart takes a store/AMO or load access fault inside\n`csp_conn_allocate()` and parks in the FreeRTOS trap handler\n(exceptions re-enter via mret to the same instruction). The node hangs\nsilently; no CSP error path is reached.\n\nDebugger evidence: PC parked at the FreeRTOS\n`application_exception_handler` (portASM.S); task stack still contains\nthe 0xA5 fill pattern (fault occurs on the task's first real call).\nmcause = (5 or 7)\nmepc = 0x800541c\n\nDisassembly of `csp_conn_allocate()` (GCC 8.3, rv64gc, -O0), showing\nthe three atomic operations involved:\n\n```\n0x800541c:  lr.w.aq      a4, (a2)        ; CAS load  (arr_conn[i].state)\n0x8005420:  bne          a4, a3, +0xa\n0x8005424:  sc.w.aq      a0, a1, (a2)    ; CAS store\n0x8005428:  c.bnez       a0, -0xc\n...\n0x80054ce:  fence        iorw, ow\n0x80054d2:  amoswap.w.aq zero, a4, (a5)  ; seq-cst store to conn->type\n```\n\n`arr_conn` resides at 0x080184d0 (PolarFire L2-LIM region,\n0x08000000..0x08040000, non-cacheable).\n\n## Environment Details\n\n- Build OS: Windows 10/11, Microchip SoftConsole v2022.2-RISC-V-747\n- Target OS: FreeRTOS (FreeRTOS-Kernel bundled in the BSP project),\n  bare-metal PolarFire SoC MSS (RV64GC, SiFive U54), hart U54_1\n- libcsp commit hash: 0d95f6c1eb2a1d6f9c3939ac348055f9ee1d1e22 (tag v2.1)\n- Meson version: not used\n- CMake version: 4.4.2 (used only to generate include/csp/autoconfig.h;\n  compilation is via the SoftConsole managed build)\n- GNU Make version: bundled with SoftConsole (GNU Make 4.x)\n- Ninja version: not used\n\nautoconfig.h used:\n\n```c\n#define CSP_POSIX 0\n#define CSP_ZEPHYR 0\n#define CSP_FREERTOS 1\n#define CSP_HAVE_STDIO 0\n#define CSP_ENABLE_CSP_PRINT 0\n#define CSP_PRINT_STDIO 0\n#define CSP_REPRODUCIBLE_BUILDS 0\n#define CSP_QFIFO_LEN 10\n#define CSP_PORT_MAX_BIND 16\n#define CSP_CONN_RXQUEUE_LEN 16\n#define CSP_CONN_MAX 8\n#define CSP_BUFFER_SIZE 256\n#define CSP_BUFFER_COUNT 10\n#define CSP_RDP_MAX_WINDOW 5\n#define CSP_RTABLE_SIZE 10\n#define CSP_USE_RDP 0\n#define CSP_USE_HMAC 0\n#define CSP_USE_PROMISC 0\n#define CSP_USE_RTABLE 1\n#define CSP_BUFFER_ZERO_CLEAR 1\n#define CSP_HAVE_LIBSOCKETCAN 0\n#define CSP_HAVE_LIBZMQ 0\n#define CSP_FIXUP_V1_ZMQ_LITTLE_ENDIAN 1\n```\n\n## Logs or console output from the very beginning to the end\n\n```\n==========================================\n PolarFire SoC -- libcsp loopback (U54_1)\n==========================================\n[boot] Installing FreeRTOS trap handler in mtvec...\n[boot] Checking endian shim...\n[boot]   endian shim OK\n[boot] Initialising CSP...\n[boot]   addr=1  buffers=10  mtu=256\n[boot] Creating kernel objects (static allocation)...\n[boot] Starting scheduler -- control passes to FreeRTOS.\n[router] ready\n[ping] ready\n```\n\n(no further output; the first csp_ping() -> csp_connect() ->\ncsp_conn_allocate() faults and the hart never returns from the\nexception path. With the atomics replaced by a FreeRTOS critical\nsection locally, the same binary runs the loopback ping indefinitely\nwith stable buffer accounting.)\n\n## Additional Context\n\n- The same statically-linked image, with only `csp_conn` changed to\n  use `taskENTER_CRITICAL()/taskEXIT_CRITICAL()` around the slot claim\n  and plain `int` state/type fields, runs correctly on the same\n  hardware (loopback ping, 5+ minutes, no buffer leak). This isolates\n  the failure to the atomics.\n- Note that patching only the CAS is insufficient: the seq-cst store\n  to `conn->type` compiles to `amoswap.w`, which faults identically,\n  so the `atomic_int` declarations in `csp_conn.h` are part of the\n  same issue.\n- The fault mode is particularly unfriendly because it is invisible:\n  no return code, no debug counter, no hook -- the node simply stops.\n\n## Checklist\n\n- [x] I've searched in \"Issues\" for similar issues, both open and closed.\n- [x] I've used GitHub Flavored Markdown (GFM) to format my text.\n- [x] I've avoided using screenshots for console output or logs\n- [x] I've included all relevant details and steps to reproduce the issue.\n- [x] I've provided information about my environment.\n- [x] I've attached necessary logs or code snippet for minimal reproducible example.\n",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/1009",
+            "display_title": "csp_conn atomics (LR/SC + AMO) raise access faults on targets without atomic support in the backing memory (e.g. TCM/scratchpad RAM); silent hang on first csp_connect()"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/350",
+            "title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE",
+            "issue_number": 350,
+            "body": "Following \"if\" statement found on csp_rtable_cidr.c:67 seems to be somehow broken/illogical.\r\n\r\n```\r\nif (rtable_inptr == CSP_RTABLE_SIZE)\r\n  rtable_inptr = CSP_RTABLE_SIZE;\r\n```\r\n\r\nSince this is the only place where `rtable_inptr` is increased I'm assuming that the idea was to move this check one line above to prevent having this counter overflowing maximum table size.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/350",
+            "display_title": "Potential crash when adding more routes than defined by CSP_RTABLE_SIZE"
+          }
+        ]
+      }
+    },
+    {
+      "query_index": 2,
+      "result": {
+        "issues": [
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/439",
+            "title": "Multi-Interface, Single-Device Configuration (CSP 1.x)",
+            "issue_number": 439,
+            "body": "I'm looking at writing an application that can communicate with the same device over both CAN and UART. I've seen a few mentione ([#342](https://github.com/libcsp/libcsp/issues/342#issuecomment-1020883684), [#331](https://github.com/libcsp/libcsp/issues/331)) of CSP 2.x supporting sending a single message to multiple interfaces for the sake of redundancy.\r\n\r\nWe were hoping to implement something similar but the device we're using only supports CSP 1.x. The device in question is connected to the main processor via both CAN and UART. We were hoping to implement a fail-safe where the main processor could switch between the two interfaces in the event that the main interface fails.\r\n\r\nIs there a standard / recommended way to accomplish this in CSP 1.x? I don't necessarily need both to be active at the same time (and I'm not sure if it even has de-duplication enabled), so would the best option to use `csp_rtable_set()` to switch as needed? I'm not sure if this would introduce a race condition or otherwise cause issues by modifying the routing table at run time (after calling `csp_route_start_task()`.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/439",
+            "display_title": "Multi-Interface, Single-Device Configuration (CSP 1.x)"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/937",
+            "title": "Via Routing doesn't work on CAN with CSP2.0 without promiscuous mode",
+            "issue_number": 937,
+            "body": "## Description\n\nDuring some recent testing I have observed that the Via address specified in a route wasn't used when the packet was routed over the CAN bus, instead the original destination address was used. I am using CSP version 2. To overcome this, I had to make all of the CAN nodes in the network use promiscuos mode. This has consequences for the amount of processing that each node has to do as the packets aren't filtered based upon thier address.\n\n## Steps to Reproduce\n\nThe cause is clear from looking at [csp_can2_tx in csp_if_can.c](https://github.com/libcsp/libcsp/blob/develop/src/interfaces/csp_if_can.c), the via argument is ignored, and not used to set the ID in the CAN frame.\n\n```\nstatic int csp_can2_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet, int from_me) {\n\t/* Avoid compiler warnings about unused parameter */\n\t(void)via;\n\t(void)from_me;\n```\n\nCan you explain the rational behind this?\n\n## Expected behavior\n\nThe Via address is used.\n\n## Actual Behavior\n\nThe Via address isn't used.\n\n## Environment Details\n\nProvide information about your environment, including:\n\n- Build OS:  Ubuntu 20.04\n- Target OS:  Buildroot generated Linux, ARM CPU\n- libcsp commit hash: 63e1b05933cccdad5571bc51031c2e8c43b3987b\n- CMake version: 3.29.1\n\n## Checklist\n\n- [x] I've searched in \"Issues\" for similar issues, both open and closed.\n- [x] I've used GitHub Flavored Markdown (GFM) to format my text.\n- [x] I've avoided using screenshots for console output or logs\n- [x] I've included all relevant details and steps to reproduce the issue.\n- [x] I've provided information about my environment.\n- [x] I've attached necessary logs or code snippet for minimal reproducible example.\n",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/937",
+            "display_title": "Via Routing doesn't work on CAN with CSP2.0 without promiscuous mode"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/861",
+            "title": "Split horizon protection prevents packet forwarding",
+            "issue_number": 861,
+            "body": "## Description\n\nI am using CSP protocol version 1.\n\nMy network setup is a chain of 4 nodes that are interconnected using KISS interfaces:\n\n**Node A**\nOS: Linux\nInterfaces: LOOP, KISS\nRouting table: 12/5 LOOP, 13/5 KISS, 14/4 KISS\n\n**Node B**\nOS: Zephyr\nInterfaces: LOOP, KISS_A, KISS_C\nRouting table: 13/5 LOOP, 12/5 KISS_A, 14/4 KISS_C\n\n**Node C**\nOS: Zephyr\nInterfaces: LOOP, KISS_B, KISS_D\nRouting table: 15/5 LOOP, 12/4 KISS_B, 14/5 KISS_D\n\n**Node D**\nOS: Linux\nInterfaces: LOOP, KISS\nRouting table: 14/5 LOOP, 15/5 KISS, 12/4 KISS\n\n## Steps to Reproduce\n\nSend a packet (e.g. ping) from A to C or from A to D.\n\n## Expected behavior\n\nThe packet arrives at C (or D respectively).\n\n## Actual Behavior\n\nThe packet arrives at B but is not forwarded. I have traced it down to the `csp_iflist_is_within_subnet()` which filters the packet.\n\nI think I get the concept of the split horizon protection that kicks in here. But is what I am trying to do not reasonable? Am I doing it wrong?\n\n## Environment Details\n\nProvide information about your environment, including:\n\n- Build OS: Debian 12\n- Target OS: Zephyr\n- libcsp commit hash: e6555c5\n\n## Checklist\n\n- [x] I've searched in \"Issues\" for similar issues, both open and closed.\n- [x] I've used GitHub Flavored Markdown (GFM) to format my text.\n- [x] I've avoided using screenshots for console output or logs\n- [x] I've included all relevant details and steps to reproduce the issue.\n- [x] I've provided information about my environment.\n- [ ] I've attached necessary logs or code snippet for minimal reproducible example.\n",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/861",
+            "display_title": "Split horizon protection prevents packet forwarding"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/342",
+            "title": "CMP route get/list",
+            "issue_number": 342,
+            "body": "Hello everyone,\r\n\r\nI'd like to ask whether there's some way to retrieve (or list) all routes currently configured on a node. There's the route set command, so it almost seems \"natural\" it could have a get counterpart.\r\n\r\nIs this something that's planned for the future, or is it intentionally not included?\r\n\r\nThanks!",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/342",
+            "display_title": "CMP route get/list"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/319",
+            "title": "thoughts on csp_print()",
+            "issue_number": 319,
+            "body": "`csp_print()` is a macro but `csp_print_func()` is a function.  `csp_print()` doesn't pass any file related information to `csp_print_func()`. \r\n That means that we can't get any file related info, such as `__LINE__` or `__file__` in `csp_print_func()`.\r\n\r\nThere is no way to replace `csp_print()`.\r\n\r\nAlso, some OS can print without stdio.  ie) having simple UART driver without full `stdio.h`.  But currently we are either\r\n- having `stdio.h` and `csp_print_func()`, which uses `stdio.h`, or\r\n- `csp_print()` become noop.  no print.\r\n\r\nWe need third option.  Enable `csp_print()` without `stdio.h`.\r\n\r\nTo combine the two, I propose: Make csp_print() replaceable so that custom csp_print() can take context info if needed.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/319",
+            "display_title": "thoughts on csp_print()"
+          },
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/7",
+            "title": "Increase MTU on packets and add fragmentation on layer 3",
+            "issue_number": 7,
+            "body": "Original idea: Implement full support for data buffering and fragmentation. (TCP-a-like)\n\nProposed change: Increase MTU and provide automatic fragmentation on layer 3. (unless the DF flag is set). This leads to two new fields in the routing table. These fields may be set statically in the table compile time, or discovered by a traceroute.\n\n1) Max MTU\n2) Estimated round trip time.\n",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/7",
+            "display_title": "Increase MTU on packets and add fragmentation on layer 3"
+          }
+        ]
+      }
+    },
+    {
+      "query_index": 3,
+      "result": {
+        "issues": []
+      }
+    }
+  ],
+  "later_searches": [
+    {
+      "query_index": 1,
+      "result": {
+        "issues": [
+          {
+            "id": null,
+            "url": "https://github.com/libcsp/libcsp/issues/971",
+            "title": "Security: unchecked ZMQ frame length can overflow CSP packet buffers; CMP memory services increase impact",
+            "issue_number": 971,
+            "body": "## Description\n\nI found security issues in the stock ZMQ path that appear to affect the unmodified example deployment:\n\n```sh\nexamples/zmqproxy\nexamples/csp_server -z 127.0.0.1 -a 1 -v 2\n```\n\nThe primary issue is an unchecked copy in `src/interfaces/csp_if_zmqhub.c`. The receive task allocates/initializes a ZMQ message with a packet-sized hint, but `zmq_msg_recv()` can still receive a larger message. The code then copies `zmq_msg_size()` bytes into the CSP packet frame without checking that the received frame fits in the destination packet buffer.\n\nAffected code path, tested at commit `4352143edba2af45afeb32d5b62ea5746b93a26a`:\n\n```c\n/* src/interfaces/csp_if_zmqhub.c */\nret = zmq_msg_init_size(&msg, sizeof(packet->data) + HEADER_SIZE);\n...\nif (zmq_msg_recv(&msg, drv->subscriber, 0) < 0) {\n    ...\n}\n\nsize_t datalen = zmq_msg_size(&msg);\n...\npacket = csp_buffer_get(0);\n...\nmemcpy(packet->frame_begin, rx_data, datalen);\npacket->frame_length = datalen;\n```\n\nThis should be treated as a security issue, not only a crash bug. In the stock POSIX/ZMQ example configuration, I was able to validate unauthenticated network-triggered code execution by chaining this packet overflow with reachable CSP management functionality. We have an end-to-end RCE reproducer against the unmodified stock ZMQ example deployment.\n\nWe also have several related exploit variants demonstrating different RCE paths and primitives, including memory disclosure, controlled write/callback installation, and full command execution. I am intentionally not attaching those reproducers publicly, but I can share them privately with maintainers.\n\nRelated hardening issue: `src/csp_service_handler.c` exposes CMP memory operations. On non-AVR builds, v1 CMP PEEK/POKE use process `memcpy` by default, and v2 PEEK/POKE call configurable memory callbacks. Applications that route unauthenticated packets to `csp_service_handler()` should not expose these services to untrusted peers by default.\n\n## Expected behavior\n\nOversized ZMQ frames should be rejected before copying into CSP packet buffers. Management services that can read/write process memory should require explicit opt-in and authentication/authorization before exposure to network peers.\n\n## Actual behavior\n\nAn unauthenticated ZMQ peer can send an oversized frame that is copied past the packet buffer in `csp_zmqhub_task()`. In the stock ZMQ example deployment, this can be exploited beyond denial of service.\n\n## Environment details\n\n- Build OS: Linux\n- Target OS: Linux, POSIX libcsp build\n- Transport: stock ZMQ example path\n- libcsp commit hash: `4352143edba2af45afeb32d5b62ea5746b93a26a`\n- Stock target commands:\n\n  ```sh\n  examples/zmqproxy\n  examples/csp_server -z 127.0.0.1 -a 1 -v 2\n  ```\n\n## Suggested fixes\n\n1. In `csp_zmqhub_task()`, reject any post-fixup `datalen` that exceeds the writable packet/frame capacity before calling `memcpy()`.\n2. Ensure all error paths close the ZMQ message and free any allocated CSP packet.\n3. Harden `examples/zmqproxy.c` so the capture/logging path does not copy arbitrary-size messages into fixed packet buffers and handles multipart messages correctly.\n4. Consider disabling CMP PEEK/POKE by default, gating them behind an explicit unsafe/debug build option, or requiring authentication/authorization before `CSP_CMP` memory operations are reachable.\n5. Add regression tests for oversized ZMQ frames and unauthenticated CMP memory operations.\n\n## Private details\n\nI have working private reproducers and validation logs, including an end-to-end stock RCE chain. Please reply here or enable GitHub private vulnerability reporting for this repository, and I can share the full report and PoC privately.\n\n## Checklist\n\n- [x] I've searched in \"Issues\" for similar issues, both open and closed.\n- [x] I've used GitHub Flavored Markdown (GFM) to format my text.\n- [x] I've avoided using screenshots for console output or logs.\n- [x] I've included relevant details and reproduction conditions.\n- [x] I've provided environment information.\n- [x] I can provide logs and the private reproducer through a non-public channel.",
+            "state": null,
+            "user": null,
+            "assignees": null,
+            "labels": null,
+            "milestone": null,
+            "state_reason": null,
+            "comments": null,
+            "created_at": null,
+            "updated_at": null,
+            "closed_at": null,
+            "display_url": "https://github.com/libcsp/libcsp/issues/971",
+            "display_title": "Security: unchecked ZMQ frame length can overflow CSP packet buffers; CMP memory services increase impact"
+          }
+        ]
+      }
+    },
+    {
+      "query_index": 2,
+      "result": {
+        "issues": []
+      }
+    }
+  ]
+}

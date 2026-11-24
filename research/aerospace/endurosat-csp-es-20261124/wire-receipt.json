@@ -1,0 +1,39 @@
+{
+  "source_commit": "135807773e7fd9aea9f68f027e296e9f54d75830",
+  "source_sha256": "7823dff7bc7f35e3a613dc0dd8c7eaee1e2ca8104a70a0d0723c26848a064eab",
+  "mutant_sha256": "a8f13c43fdcab59b8873c9243f41f67e8dd0021151d4c405028fd56228791a79",
+  "original_source_unchanged": true,
+  "receipt_scope": "Linux x86-64; portable endian code also runs on x86-64, not a target/emulator",
+  "results": {
+    "native": {
+      "requests": 1924,
+      "encodes": 952,
+      "independent_decodes": 952,
+      "short_header_controls": 20,
+      "native_roundtrips_passed": 952,
+      "golden_discrepancies": 0,
+      "input_sha256": "4ea72e03c5d22e1a649267791a4622a9501ca9f01a9a065b5b08eada1ea3829d",
+      "output_sha256": "730f9c307f4893bcdbac680334e10cebf710fd7c0df5bb873b5f7cf8092eb0ba"
+    },
+    "portable": {
+      "requests": 1924,
+      "encodes": 952,
+      "independent_decodes": 952,
+      "short_header_controls": 20,
+      "native_roundtrips_passed": 952,
+      "golden_discrepancies": 0,
+      "input_sha256": "4ea72e03c5d22e1a649267791a4622a9501ca9f01a9a065b5b08eada1ea3829d",
+      "output_sha256": "730f9c307f4893bcdbac680334e10cebf710fd7c0df5bb873b5f7cf8092eb0ba"
+    },
+    "injected_mutant": {
+      "requests": 1924,
+      "encodes": 952,
+      "independent_decodes": 952,
+      "short_header_controls": 20,
+      "native_roundtrips_passed": 952,
+      "golden_discrepancies": 712,
+      "input_sha256": "4ea72e03c5d22e1a649267791a4622a9501ca9f01a9a065b5b08eada1ea3829d",
+      "output_sha256": "551e8a84ad439dc4d2379747e5b1b4026a747ae10a16681373cbeceef3e92f4b"
+    }
+  }
+}

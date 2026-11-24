@@ -1,0 +1,10 @@
+[ 86%] Built target csp
+[ 87%] Building C object unittests/CMakeFiles/csp_tests.dir/main.c.o
+[ 89%] Building C object unittests/CMakeFiles/csp_tests.dir/queue.c.o
+[ 93%] Building C object unittests/CMakeFiles/csp_tests.dir/hmac.c.o
+[ 93%] Building C object unittests/CMakeFiles/csp_tests.dir/buffer.c.o
+[ 96%] Building C object unittests/CMakeFiles/csp_tests.dir/route.c.o
+[ 96%] Building C object unittests/CMakeFiles/csp_tests.dir/dedup.c.o
+[ 98%] Building C object unittests/CMakeFiles/csp_tests.dir/wire.c.o
+[100%] Linking C executable csp_tests
+[100%] Built target csp_tests

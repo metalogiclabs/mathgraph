@@ -1,5 +1,7 @@
 # EnduroSat csp-es: qualification of an existing upstream dedup backport
 
+Current follow-up: [header controls and routing-table visibility](ROUTE_AND_WIRE_RESULTS.md). The separate current route finding and its historical lineage are qualified there. The original dedup results below retain their original boundary. The updated catalogue ledger has 42 scoped assessments and 62 UNASSESSED modes; the initial 33-assessment state remains recoverable at commit `679d7065`.
+
 Date: 2026-11-24. Offline synthetic unit tests only. No external submission.
 
 ## Warrant and lineage

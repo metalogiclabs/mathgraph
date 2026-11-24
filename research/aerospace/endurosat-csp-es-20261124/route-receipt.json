@@ -1,0 +1,3444 @@
+{
+  "endurosat": {
+    "commit": "135807773e7fd9aea9f68f027e296e9f54d75830",
+    "before_source_sha256": "407a32ead8f150eed1d63ba80bf515c5771b35fa6deb4f13ec8aa95ba81d1bfc",
+    "after_source_sha256": "b17dbc2bbe02fe965ee436854e8de2657c8b3030b9563b964afffadef177c8b5",
+    "arms": {
+      "before": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "author_tests": "100%: Checks: 22, Failures: 0, Errors: 0"
+      },
+      "after": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "author_tests": "100%: Checks: 22, Failures: 0, Errors: 0"
+      },
+      "withdrawn": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "author_tests": "100%: Checks: 22, Failures: 0, Errors: 0"
+      }
+    },
+    "source_restored": true
+  },
+  "libcsp": {
+    "commit": "5ba0ccf66ec0301e65160b41e035cb8a7c916949",
+    "before_source_sha256": "eef9045714eef395b333903bfbd9d7a4bf07250f621c92906067696edcc266aa",
+    "after_source_sha256": "da94cb594889b06d917cf5892d15a26f73de5e2f916963fdfe6917f827d52c8f",
+    "arms": {
+      "before": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "author_tests": "100%: Checks: 12, Failures: 0, Errors: 0"
+      },
+      "after": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 0,
+          "failures": []
+        },
+        "author_tests": "100%: Checks: 12, Failures: 0, Errors: 0"
+      },
+      "withdrawn": {
+        "capacity1-v1": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity1-v2": {
+          "capacity": 1,
+          "observations": 9,
+          "discrepancies": 8,
+          "failures": [
+            {
+              "actual": "insert\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t0\t0\t0",
+              "expected_count_found_via": [
+                1,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v1": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity2-v2": {
+          "capacity": 2,
+          "observations": 12,
+          "discrepancies": 10,
+          "failures": [
+            {
+              "actual": "insert\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t1\t1\t65535",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t1\t1\t7",
+              "expected_count_found_via": [
+                2,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t1\t0\t0",
+              "expected_count_found_via": [
+                2,
+                0,
+                0
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v1": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "capacity10-v2": {
+          "capacity": 10,
+          "observations": 36,
+          "discrepancies": 26,
+          "failures": [
+            {
+              "actual": "insert\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "insert\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t1\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "lookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "update\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t1\t0\t9\t1\t7",
+              "expected_count_found_via": [
+                10,
+                1,
+                7
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t2\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t3\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t4\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t5\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t6\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t7\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t8\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t9\t0\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t10\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                0,
+                0
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "postlookup\t11\t0\t9\t0\t0",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            },
+            {
+              "actual": "reject-null\t2\t-2\t9\t1\t65535",
+              "expected_count_found_via": [
+                10,
+                1,
+                65535
+              ],
+              "rc_ok": true
+            }
+          ]
+        },
+        "author_tests": "100%: Checks: 12, Failures: 0, Errors: 0"
+      }
+    },
+    "source_restored": true
+  }
+}

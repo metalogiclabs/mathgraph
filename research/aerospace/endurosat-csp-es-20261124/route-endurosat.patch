@@ -1,0 +1,16 @@
+--- a/src/csp_rtable_cidr.c
++++ b/src/csp_rtable_cidr.c
+@@ -80,9 +80,10 @@
+ 
+ 	/* If not, create a new one */
+ 	if (!entry) {
+-		entry = &rtable[rtable_inptr++];
+-		if (rtable_inptr >= CSP_RTABLE_SIZE) {
+-			rtable_inptr = CSP_RTABLE_SIZE - 1;
++		if (rtable_inptr < CSP_RTABLE_SIZE) {
++			entry = &rtable[rtable_inptr++];
++		} else {
++			entry = &rtable[CSP_RTABLE_SIZE - 1];
+ 		}
+ 	}
+ 

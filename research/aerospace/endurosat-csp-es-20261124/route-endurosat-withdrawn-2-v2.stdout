@@ -1,0 +1,14 @@
+capacity	2
+op	key	return	count	found	via
+insert	1	0	1	1	65535
+insert	2	0	1	0	0
+insert	3	0	1	0	0
+lookup	1	0	1	1	65535
+lookup	2	0	1	0	0
+lookup	3	0	1	0	0
+update	1	0	1	1	7
+postlookup	1	0	1	1	7
+postlookup	2	0	1	0	0
+postlookup	3	0	1	0	0
+reject-null	2	-2	1	0	0
+clear	1	0	0	0	0

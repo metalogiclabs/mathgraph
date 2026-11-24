@@ -1,0 +1,485 @@
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/csp_buffer.c: In function ‘csp_buffer_get_always’:
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/csp_buffer.c:196:22: warning: infinite loop [CWE-835] [-Wanalyzer-infinite-loop]
+  196 |                 while(1);
+      |                      ^
+  ‘csp_buffer_get_always’: event 1
+    |
+    |  192 | csp_packet_t * csp_buffer_get_always(void) {
+    |      |                ^~~~~~~~~~~~~~~~~~~~~
+    |      |                |
+    |      |                (1) entry to ‘csp_buffer_get_always’
+    |
+    +--> ‘csp_buffer_get_actual’: event 2
+           |
+           |   55 | static csp_packet_t * csp_buffer_get_actual(int reserve, int isr) {
+           |      |                       ^~~~~~~~~~~~~~~~~~~~~
+           |      |                       |
+           |      |                       (2) entry to ‘csp_buffer_get_actual’
+           |
+    <------+
+    |
+  ‘csp_buffer_get_always’: event 3
+    |
+    |  196 |                 while(1);
+    |      |                      ^
+    |      |                      |
+    |      |                      (3) infinite loop here
+    |
+  ‘csp_buffer_get_always’: event 4
+    |
+    |cc1:
+    | (4): looping back...
+    |
+  ‘csp_buffer_get_always’: event 5
+    |
+    |  196 |                 while(1);
+    |      |                      ^
+    |      |                      |
+    |      |                      (5) ...to here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/csp_buffer.c: In function ‘csp_buffer_get_always_isr’:
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/csp_buffer.c:205:22: warning: infinite loop [CWE-835] [-Wanalyzer-infinite-loop]
+  205 |                 while(1);
+      |                      ^
+  ‘csp_buffer_get_always_isr’: event 1
+    |
+    |  201 | csp_packet_t * csp_buffer_get_always_isr(void) {
+    |      |                ^~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                |
+    |      |                (1) entry to ‘csp_buffer_get_always_isr’
+    |
+    +--> ‘csp_buffer_get_actual’: event 2
+           |
+           |   55 | static csp_packet_t * csp_buffer_get_actual(int reserve, int isr) {
+           |      |                       ^~~~~~~~~~~~~~~~~~~~~
+           |      |                       |
+           |      |                       (2) entry to ‘csp_buffer_get_actual’
+           |
+    <------+
+    |
+  ‘csp_buffer_get_always_isr’: event 3
+    |
+    |  205 |                 while(1);
+    |      |                      ^
+    |      |                      |
+    |      |                      (3) infinite loop here
+    |
+  ‘csp_buffer_get_always_isr’: event 4
+    |
+    |cc1:
+    | (4): looping back...
+    |
+  ‘csp_buffer_get_always_isr’: event 5
+    |
+    |  205 |                 while(1);
+    |      |                      ^
+    |      |                      |
+    |      |                      (5) ...to here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/drivers/eth/eth_linux.c: In function ‘csp_eth_init’:
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/drivers/eth/eth_linux.c:129:13: warning: leak of file descriptor [CWE-775] [-Wanalyzer-fd-leak]
+  129 |         if (ioctl(ctx->sockfd, SIOCGIFINDEX, &ctx->if_idx) < 0) {
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ‘csp_eth_init’: events 1-4
+    |
+    |   85 |         if (ctx == NULL) {
+    |      |            ^
+    |      |            |
+    |      |            (1) following ‘false’ branch (when ‘ctx’ is non-NULL)...
+    |......
+    |   88 |         ctx->sockfd = -1; // Initialize to invalid value
+    |      |         ~~~~~~~~~~~~~~~~
+    |      |                     |
+    |      |                     (2) ...to here
+    |   89 | 
+    |   90 |         strncpy(ctx->name, ifname, CSP_IFLIST_NAME_MAX);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (3) when ‘strncpy’ copies the full source string
+    |......
+    |  104 |         if (mtu < 24) {
+    |      |            ~
+    |      |            |
+    |      |            (4) following ‘false’ branch (when ‘mtu > 23’)...
+    |
+  ‘csp_eth_init’: event 5
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |                                                        ^~~~~~~
+    |      |                                                        |
+    |      |                                                        (5) ...to here
+    |
+  ‘csp_eth_init’: events 6-10
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |            ~               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            |               |
+    |      |            |               (6) socket created here
+    |      |            |               (7) when ‘socket’ succeeds
+    |      |            (8) following ‘false’ branch...
+    |......
+    |  127 |         memset(&ctx->if_idx, 0, sizeof(struct ifreq));
+    |      |                ~~~~~~~~~~~~ 
+    |      |                |
+    |      |                (9) ...to here
+    |  128 |         strncpy(ctx->if_idx.ifr_name, device, IFNAMSIZ - 1);
+    |  129 |         if (ioctl(ctx->sockfd, SIOCGIFINDEX, &ctx->if_idx) < 0) {
+    |      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |             |
+    |      |             (10) leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/drivers/eth/eth_linux.c:176:17: warning: leak of file descriptor [CWE-775] [-Wanalyzer-fd-leak]
+  176 |                 perror("bind");
+      |                 ^~~~~~~~~~~~~~
+  ‘csp_eth_init’: events 1-4
+    |
+    |   85 |         if (ctx == NULL) {
+    |      |            ^
+    |      |            |
+    |      |            (1) following ‘false’ branch (when ‘ctx’ is non-NULL)...
+    |......
+    |   88 |         ctx->sockfd = -1; // Initialize to invalid value
+    |      |         ~~~~~~~~~~~~~~~~
+    |      |                     |
+    |      |                     (2) ...to here
+    |   89 | 
+    |   90 |         strncpy(ctx->name, ifname, CSP_IFLIST_NAME_MAX);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (3) when ‘strncpy’ copies the full source string
+    |......
+    |  104 |         if (mtu < 24) {
+    |      |            ~
+    |      |            |
+    |      |            (4) following ‘false’ branch (when ‘mtu > 23’)...
+    |
+  ‘csp_eth_init’: event 5
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |                                                        ^~~~~~~
+    |      |                                                        |
+    |      |                                                        (5) ...to here
+    |
+  ‘csp_eth_init’: events 6-23
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |            ~               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            |               |
+    |      |            |               (6) when ‘socket’ succeeds
+    |      |            (7) following ‘false’ branch...
+    |......
+    |  127 |         memset(&ctx->if_idx, 0, sizeof(struct ifreq));
+    |      |                ~~~~~~~~~~~~ 
+    |      |                |
+    |      |                (8) ...to here
+    |  128 |         strncpy(ctx->if_idx.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (9) when ‘strncpy’ truncates the source string
+    |  129 |         if (ioctl(ctx->sockfd, SIOCGIFINDEX, &ctx->if_idx) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (10) following ‘false’ branch...
+    |......
+    |  136 |         memset(&if_mac, 0, sizeof(struct ifreq));
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (11) ...to here
+    |  137 |         strncpy(if_mac.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (12) when ‘strncpy’ truncates the source string
+    |  138 |         if (ioctl(ctx->sockfd, SIOCGIFHWADDR, &if_mac) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (13) following ‘false’ branch...
+    |......
+    |  143 |         memcpy(&ctx->ifdata.if_mac, if_mac.ifr_hwaddr.sa_data, sizeof(ctx->ifdata.if_mac));
+    |      |                ~~~~~~~~~~~~~~~~~~~
+    |      |                |
+    |      |                (14) ...to here
+    |......
+    |  157 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt)) == -1) {
+    |      |            ~                
+    |      |            |
+    |      |            (15) following ‘false’ branch...
+    |......
+    |  163 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_BINDTODEVICE, device, IFNAMSIZ - 1) == -1) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(16) ...to here
+    |      |            (17) following ‘false’ branch...
+    |......
+    |  169 |         struct sockaddr_ll my_addr = {0};
+    |      |                            ~~~~~~~
+    |      |                            |
+    |      |                            (18) ...to here
+    |......
+    |  175 |         if (bind(ctx->sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr_ll)) < 0) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(19) socket created here
+    |      |            |(20) when ‘bind’ fails
+    |      |            (21) following ‘true’ branch...
+    |  176 |                 perror("bind");
+    |      |                 ~~~~~~~~~~~~~~
+    |      |                 |
+    |      |                 (22) ...to here
+    |      |                 (23) leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/drivers/eth/eth_linux.c:186:12: warning: leak of file descriptor [CWE-775] [-Wanalyzer-fd-leak]
+  186 |         if (pthread_create(&ctx->rx_thread_handle, &attr, &csp_eth_rx_loop, ctx) != 0) {
+      |            ^
+  ‘csp_eth_init’: events 1-4
+    |
+    |   85 |         if (ctx == NULL) {
+    |      |            ^
+    |      |            |
+    |      |            (1) following ‘false’ branch (when ‘ctx’ is non-NULL)...
+    |......
+    |   88 |         ctx->sockfd = -1; // Initialize to invalid value
+    |      |         ~~~~~~~~~~~~~~~~
+    |      |                     |
+    |      |                     (2) ...to here
+    |   89 | 
+    |   90 |         strncpy(ctx->name, ifname, CSP_IFLIST_NAME_MAX);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (3) when ‘strncpy’ copies the full source string
+    |......
+    |  104 |         if (mtu < 24) {
+    |      |            ~
+    |      |            |
+    |      |            (4) following ‘false’ branch (when ‘mtu > 23’)...
+    |
+  ‘csp_eth_init’: event 5
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |                                                        ^~~~~~~
+    |      |                                                        |
+    |      |                                                        (5) ...to here
+    |
+  ‘csp_eth_init’: events 6-23
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |            ~               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            |               |
+    |      |            |               (6) when ‘socket’ succeeds
+    |      |            (7) following ‘false’ branch...
+    |......
+    |  127 |         memset(&ctx->if_idx, 0, sizeof(struct ifreq));
+    |      |                ~~~~~~~~~~~~ 
+    |      |                |
+    |      |                (8) ...to here
+    |  128 |         strncpy(ctx->if_idx.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (9) when ‘strncpy’ truncates the source string
+    |  129 |         if (ioctl(ctx->sockfd, SIOCGIFINDEX, &ctx->if_idx) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (10) following ‘false’ branch...
+    |......
+    |  136 |         memset(&if_mac, 0, sizeof(struct ifreq));
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (11) ...to here
+    |  137 |         strncpy(if_mac.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (12) when ‘strncpy’ truncates the source string
+    |  138 |         if (ioctl(ctx->sockfd, SIOCGIFHWADDR, &if_mac) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (13) following ‘false’ branch...
+    |......
+    |  143 |         memcpy(&ctx->ifdata.if_mac, if_mac.ifr_hwaddr.sa_data, sizeof(ctx->ifdata.if_mac));
+    |      |                ~~~~~~~~~~~~~~~~~~~
+    |      |                |
+    |      |                (14) ...to here
+    |......
+    |  157 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt)) == -1) {
+    |      |            ~                
+    |      |            |
+    |      |            (15) following ‘false’ branch...
+    |......
+    |  163 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_BINDTODEVICE, device, IFNAMSIZ - 1) == -1) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(16) ...to here
+    |      |            (17) following ‘false’ branch...
+    |......
+    |  169 |         struct sockaddr_ll my_addr = {0};
+    |      |                            ~~~~~~~
+    |      |                            |
+    |      |                            (18) ...to here
+    |......
+    |  175 |         if (bind(ctx->sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr_ll)) < 0) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(19) socket bound here
+    |      |            |(20) when ‘bind’ succeeds
+    |      |            (21) following ‘false’ branch...
+    |......
+    |  180 |         ctx->ifdata.tx_mtu = mtu;
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                            |
+    |      |                            (22) ...to here
+    |......
+    |  186 |         if (pthread_create(&ctx->rx_thread_handle, &attr, &csp_eth_rx_loop, ctx) != 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (23) leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/drivers/eth/eth_linux.c:186:13: warning: leak of file descriptor [CWE-775] [-Wanalyzer-fd-leak]
+  186 |         if (pthread_create(&ctx->rx_thread_handle, &attr, &csp_eth_rx_loop, ctx) != 0) {
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ‘csp_eth_init’: events 1-4
+    |
+    |   85 |         if (ctx == NULL) {
+    |      |            ^
+    |      |            |
+    |      |            (1) following ‘false’ branch (when ‘ctx’ is non-NULL)...
+    |......
+    |   88 |         ctx->sockfd = -1; // Initialize to invalid value
+    |      |         ~~~~~~~~~~~~~~~~
+    |      |                     |
+    |      |                     (2) ...to here
+    |   89 | 
+    |   90 |         strncpy(ctx->name, ifname, CSP_IFLIST_NAME_MAX);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (3) when ‘strncpy’ copies the full source string
+    |......
+    |  104 |         if (mtu < 24) {
+    |      |            ~
+    |      |            |
+    |      |            (4) following ‘false’ branch (when ‘mtu > 23’)...
+    |
+  ‘csp_eth_init’: event 5
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |                                                        ^~~~~~~
+    |      |                                                        |
+    |      |                                                        (5) ...to here
+    |
+  ‘csp_eth_init’: events 6-23
+    |
+    |  115 |         if ((ctx->sockfd = socket(AF_PACKET, SOCK_RAW, htobe16(CSP_ETH_TYPE_CSP))) == -1) {
+    |      |            ~               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            |               |
+    |      |            |               (6) when ‘socket’ succeeds
+    |      |            (7) following ‘false’ branch...
+    |......
+    |  127 |         memset(&ctx->if_idx, 0, sizeof(struct ifreq));
+    |      |                ~~~~~~~~~~~~ 
+    |      |                |
+    |      |                (8) ...to here
+    |  128 |         strncpy(ctx->if_idx.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (9) when ‘strncpy’ copies the full source string
+    |  129 |         if (ioctl(ctx->sockfd, SIOCGIFINDEX, &ctx->if_idx) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (10) following ‘false’ branch...
+    |......
+    |  136 |         memset(&if_mac, 0, sizeof(struct ifreq));
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (11) ...to here
+    |  137 |         strncpy(if_mac.ifr_name, device, IFNAMSIZ - 1);
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |         |
+    |      |         (12) when ‘strncpy’ truncates the source string
+    |  138 |         if (ioctl(ctx->sockfd, SIOCGIFHWADDR, &if_mac) < 0) {
+    |      |            ~                
+    |      |            |
+    |      |            (13) following ‘false’ branch...
+    |......
+    |  143 |         memcpy(&ctx->ifdata.if_mac, if_mac.ifr_hwaddr.sa_data, sizeof(ctx->ifdata.if_mac));
+    |      |                ~~~~~~~~~~~~~~~~~~~
+    |      |                |
+    |      |                (14) ...to here
+    |......
+    |  157 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt)) == -1) {
+    |      |            ~                
+    |      |            |
+    |      |            (15) following ‘false’ branch...
+    |......
+    |  163 |         if (setsockopt(ctx->sockfd, SOL_SOCKET, SO_BINDTODEVICE, device, IFNAMSIZ - 1) == -1) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(16) ...to here
+    |      |            (17) following ‘false’ branch...
+    |......
+    |  169 |         struct sockaddr_ll my_addr = {0};
+    |      |                            ~~~~~~~
+    |      |                            |
+    |      |                            (18) ...to here
+    |......
+    |  175 |         if (bind(ctx->sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr_ll)) < 0) {
+    |      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |            ||
+    |      |            |(19) socket bound here
+    |      |            |(20) when ‘bind’ succeeds
+    |      |            (21) following ‘false’ branch...
+    |......
+    |  180 |         ctx->ifdata.tx_mtu = mtu;
+    |      |         ~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                            |
+    |      |                            (22) ...to here
+    |......
+    |  186 |         if (pthread_create(&ctx->rx_thread_handle, &attr, &csp_eth_rx_loop, ctx) != 0) {
+    |      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |             |
+    |      |             (23) leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/interfaces/csp_if_udp.c: In function ‘csp_if_udp_rx_loop’:
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/interfaces/csp_if_udp.c:100:19: warning: leak of file descriptor ‘socket(2, 2, 0)’ [CWE-775] [-Wanalyzer-fd-leak]
+  100 |         if (ifconf->sockfd < 0) {
+      |             ~~~~~~^~~~~~~~
+  ‘csp_if_udp_rx_loop’: events 1-3
+    |
+    |   99 |         ifconf->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    |      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                          |
+    |      |                          (1) datagram socket created here
+    |      |                          (2) when ‘socket’ succeeds
+    |  100 |         if (ifconf->sockfd < 0) {
+    |      |             ~~~~~~~~~~~~~~
+    |      |                   |
+    |      |                   (3) ‘socket(2, 2, 0)’ leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/interfaces/csp_if_udp.c:112:12: warning: leak of file descriptor ‘*ifconf.sockfd’ [CWE-775] [-Wanalyzer-fd-leak]
+  112 |         if (bind(ifconf->sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+      |            ^
+  ‘csp_if_udp_rx_loop’: events 1-3
+    |
+    |   99 |         ifconf->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    |      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                          |
+    |      |                          (1) datagram socket created here
+    |      |                          (2) when ‘socket’ succeeds
+    |......
+    |  112 |         if (bind(ifconf->sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    |      |            ~              
+    |      |            |
+    |      |            (3) ‘*ifconf.sockfd’ leaks here
+    |
+/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/src/interfaces/csp_if_udp.c:112:12: warning: leak of file descriptor ‘*ifconf.sockfd’ [CWE-775] [-Wanalyzer-fd-leak]
+  112 |         if (bind(ifconf->sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+      |            ^
+  ‘csp_if_udp_rx_loop’: events 1-3
+    |
+    |   99 |         ifconf->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    |      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    |      |                          |
+    |      |                          (1) datagram socket created here
+    |      |                          (2) when ‘socket’ succeeds
+    |......
+    |  112 |         if (bind(ifconf->sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    |      |            ~              
+    |      |            |
+    |      |            (3) ‘*ifconf.sockfd’ leaks here
+    |

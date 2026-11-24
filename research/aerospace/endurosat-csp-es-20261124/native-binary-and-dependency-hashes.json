@@ -1,0 +1,130 @@
+{
+  "note": "Binary hashes identify executed artifacts still present locally; binaries are rebuildable from retained sources and are not copied into git. Original author-test binaries were rebuilt across arms and not all retained separately.",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "compiler": "gcc (Debian 14.2.0-19) 14.2.0",
+  "cmake": "4.4.5",
+  "python": "3.12.14",
+  "executables": {
+    "after-probe": {
+      "sha256": "a956073fd97e0bcbbebcf9595128115922050036bdbaa756191ab312b974b303",
+      "bytes": 147120
+    },
+    "after-upstream-tests": {
+      "sha256": "cef7a43b71daadb85c398fe1623667105eafff8b0d3d8b6383504cb2c59cf5f0",
+      "bytes": 154120
+    },
+    "before-probe": {
+      "sha256": "26c8e6b44e5ba05f0d334ce50e03c753995e05a516b30142e07369fa10c691ac",
+      "bytes": 147072
+    },
+    "before-upstream-tests": {
+      "sha256": "bb90e983f44e98e50bfaea83fc89be5eeeddecb63fc1462018895b35b5b74bfa",
+      "bytes": 154064
+    },
+    "route-capacity-native": {
+      "sha256": "bae49c758ceaaab1cd8848fc055651861aeb79ec6bfaa345f013f6fb87885ae0",
+      "bytes": 146928
+    },
+    "route-endurosat-after-1-probe": {
+      "sha256": "696d5c11e4a1daf5942d1faf034c6d4cea4f35c8aec45ae6e8c5e646af18df37",
+      "bytes": 147160
+    },
+    "route-endurosat-after-10-probe": {
+      "sha256": "44b33b0efcf5def8af081ec886316254c0357df46f375d53ca3305a2560bf2e5",
+      "bytes": 147160
+    },
+    "route-endurosat-after-2-probe": {
+      "sha256": "ecd62106b22f51afabda4f5196465026273496c46d44f78d7c416b080a14e754",
+      "bytes": 147160
+    },
+    "route-endurosat-before-1-probe": {
+      "sha256": "b2526d1e407ea4c88fd6e84cb4271abdf9ad21b71d763e4658eb8187c56fba9c",
+      "bytes": 147160
+    },
+    "route-endurosat-before-10-probe": {
+      "sha256": "e307d6a50b10a055a9bb7b334f0ce0b19bd933b886202d98d2dbda979fff31d2",
+      "bytes": 147160
+    },
+    "route-endurosat-before-2-probe": {
+      "sha256": "f93a366378bfb8791c97c29078606718bdc1a72095d0374bb56ecc4b6e6dbd6d",
+      "bytes": 147160
+    },
+    "route-endurosat-withdrawn-1-probe": {
+      "sha256": "b2526d1e407ea4c88fd6e84cb4271abdf9ad21b71d763e4658eb8187c56fba9c",
+      "bytes": 147160
+    },
+    "route-endurosat-withdrawn-10-probe": {
+      "sha256": "e307d6a50b10a055a9bb7b334f0ce0b19bd933b886202d98d2dbda979fff31d2",
+      "bytes": 147160
+    },
+    "route-endurosat-withdrawn-2-probe": {
+      "sha256": "f93a366378bfb8791c97c29078606718bdc1a72095d0374bb56ecc4b6e6dbd6d",
+      "bytes": 147160
+    },
+    "route-libcsp-after-1-probe": {
+      "sha256": "41943e96512930a948bb01d6e37bb054f75ab12ec4e6007d1a82e83f0eb5e7ba",
+      "bytes": 147392
+    },
+    "route-libcsp-after-10-probe": {
+      "sha256": "0fe1b102de39adc69de1a0224fabbce10979f4b44f0d45b41f1da869691d0c41",
+      "bytes": 147392
+    },
+    "route-libcsp-after-2-probe": {
+      "sha256": "2cd9766806b83799438055e1e4a8a9c646418f7bcf0358b88c68b8aed64acf21",
+      "bytes": 147392
+    },
+    "route-libcsp-before-1-probe": {
+      "sha256": "65e2fb033fffb965131bef14e8d5687d164a8ad0df31b2eb91443a3c737fc492",
+      "bytes": 147392
+    },
+    "route-libcsp-before-10-probe": {
+      "sha256": "dcf6f718d4961963b01593b3dff422fd5f30f5dc40526aa36c5ece1a301189d4",
+      "bytes": 147392
+    },
+    "route-libcsp-before-2-probe": {
+      "sha256": "5463a80cadd07d55b0a5c55a8a90ec13cebf4f49b1856dd2a8df5bbb96c018d2",
+      "bytes": 147392
+    },
+    "route-libcsp-probe": {
+      "sha256": "9bd016b2ffafd798cad96ddcae67c268b70dc6ecd8a5a8feca39d5aab00b7ddf",
+      "bytes": 20656
+    },
+    "route-libcsp-withdrawn-1-probe": {
+      "sha256": "65e2fb033fffb965131bef14e8d5687d164a8ad0df31b2eb91443a3c737fc492",
+      "bytes": 147392
+    },
+    "route-libcsp-withdrawn-10-probe": {
+      "sha256": "dcf6f718d4961963b01593b3dff422fd5f30f5dc40526aa36c5ece1a301189d4",
+      "bytes": 147392
+    },
+    "route-libcsp-withdrawn-2-probe": {
+      "sha256": "5463a80cadd07d55b0a5c55a8a90ec13cebf4f49b1856dd2a8df5bbb96c018d2",
+      "bytes": 147392
+    },
+    "wire-mutant": {
+      "sha256": "435275c99fa969253d8326b750579f64e55bcac198a16e843c22abf54d993ea7",
+      "bytes": 152672
+    },
+    "wire-native": {
+      "sha256": "b9ec0d1a343f2e9aabc295f85fd143298f0e41f8e8a05dea8930155760c5743c",
+      "bytes": 152656
+    },
+    "wire-portable": {
+      "sha256": "4b3d9e9fba5929bddaf3687804bb0f61e398255cfcd4e555f812755f4bf26db1",
+      "bytes": 154720
+    },
+    "withdrawn-probe": {
+      "sha256": "26c8e6b44e5ba05f0d334ce50e03c753995e05a516b30142e07369fa10c691ac",
+      "bytes": 147072
+    },
+    "withdrawn-upstream-tests": {
+      "sha256": "bb90e983f44e98e50bfaea83fc89be5eeeddecb63fc1462018895b35b5b74bfa",
+      "bytes": 154064
+    }
+  },
+  "dependencies": {
+    "/usr/lib/x86_64-linux-gnu/libc.so.6": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+    "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307",
+    "/workspace/scratch/0e0b2d02ebfd/libcheck-installed/lib/libcheck.so.0.15.2": "0456e30267b061255870b421b3fdbbc3316b8a1b910bb535aed4b46bdeb0561c"
+  }
+}

@@ -1,0 +1,31 @@
+-- The C compiler identification is GNU 14.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- libcsp_es: No version provided, using placeholder 0.0.0
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- Found Python3: /opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12 (found version "3.12.14") found components: Interpreter Development Development.Module Development.Embed
+-- Checking for module 'libsystemd'
+--   Package 'libsystemd', required by 'virtual:world', not found
+-- pkg-config found, including install_paths.cmake
+-- Building for Linux
+-- Looking for include file sys/socket.h
+-- Looking for include file sys/socket.h - found
+-- Looking for include file arpa/inet.h
+-- Looking for include file arpa/inet.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Checking for one of the modules 'yaml-0.1'
+-- Checking for one of the modules 'libzmq'
+-- Checking for one of the modules 'libsocketcan'
+-- Checking for one of the modules 'check'
+-- Found check 0.15.2
+-- Looking for endian.h
+-- Looking for endian.h - found
+-- CSP_TRACEROUTE is OFF - skipping csp_virtual_topology build. Use -DCSP_TRACEROUTE=ON to enable
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-route-10

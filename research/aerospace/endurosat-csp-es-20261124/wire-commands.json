@@ -1,0 +1,154 @@
+[
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DHAVE_ENDIAN_H=ON"
+    ],
+    "name": "wire-native-configure",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph",
+      "-j",
+      "2",
+      "--target",
+      "csp_es",
+      "csp_tests"
+    ],
+    "name": "wire-native-build",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph/unittests/csp_tests"
+    ],
+    "name": "wire-native-author-tests",
+    "exit": 0
+  },
+  {
+    "args": [
+      "gcc",
+      "-std=gnu11",
+      "-O0",
+      "-g",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/include",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph/include",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-probe.c",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph/libcsp_es.a",
+      "-lpthread",
+      "-o",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-native"
+    ],
+    "name": "wire-native-compile",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-matrix.py",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-native",
+      "native"
+    ],
+    "name": "wire-native-matrix",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "-S",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es",
+      "-B",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-portable-endian",
+      "-DCSP_BUILD_SAMPLES=OFF",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DHAVE_ENDIAN_H=OFF"
+    ],
+    "name": "wire-portable-configure",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/build-tools/cmake/data/bin/cmake",
+      "--build",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-portable-endian",
+      "-j",
+      "2",
+      "--target",
+      "csp_es",
+      "csp_tests"
+    ],
+    "name": "wire-portable-build",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-portable-endian/unittests/csp_tests"
+    ],
+    "name": "wire-portable-author-tests",
+    "exit": 0
+  },
+  {
+    "args": [
+      "gcc",
+      "-std=gnu11",
+      "-O0",
+      "-g",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/include",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-portable-endian/include",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-probe.c",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-portable-endian/libcsp_es.a",
+      "-lpthread",
+      "-o",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-portable"
+    ],
+    "name": "wire-portable-compile",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-matrix.py",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-portable",
+      "portable"
+    ],
+    "name": "wire-portable-matrix",
+    "exit": 0
+  },
+  {
+    "args": [
+      "gcc",
+      "-std=gnu11",
+      "-O0",
+      "-g",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/include",
+      "-I/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph/include",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-probe.c",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-srcdst-mutant.c",
+      "/workspace/scratch/0e0b2d02ebfd/endurosat-csp-es/build-mathgraph/libcsp_es.a",
+      "-lpthread",
+      "-o",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-mutant"
+    ],
+    "name": "wire-mutant-compile",
+    "exit": 0
+  },
+  {
+    "args": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-matrix.py",
+      "/workspace/scratch/0e0b2d02ebfd/enduro-evidence/wire-mutant",
+      "mutant"
+    ],
+    "name": "wire-mutant-matrix",
+    "exit": 0
+  }
+]

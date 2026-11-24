@@ -1,0 +1,6 @@
+[  2%] Building C object CMakeFiles/csp_es.dir/src/csp_rtable_cidr.c.o
+[  4%] Linking C static library libcsp_es.a
+[100%] Built target csp_es
+[ 85%] Built target csp_es
+[ 87%] Linking C executable csp_tests
+[100%] Built target csp_tests

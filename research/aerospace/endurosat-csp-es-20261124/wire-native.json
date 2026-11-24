@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "requests": 1924,
+    "encodes": 952,
+    "independent_decodes": 952,
+    "short_header_controls": 20,
+    "native_roundtrips_passed": 952,
+    "golden_discrepancies": 0,
+    "input_sha256": "4ea72e03c5d22e1a649267791a4622a9501ca9f01a9a065b5b08eada1ea3829d",
+    "output_sha256": "730f9c307f4893bcdbac680334e10cebf710fd7c0df5bb873b5f7cf8092eb0ba"
+  },
+  "failures": [],
+  "all_failure_ids": [],
+  "detail_boundary": "First 12 details; complete actual stdout and deterministic input retained."
+}
