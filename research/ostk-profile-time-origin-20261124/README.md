@@ -1,6 +1,8 @@
 # OSTk tabulated flight-profile sample order
 
-Status: locally WARRANTED finite counterexample; clean hosted replay pending.
+Status: WARRANTED finite counterexample, verified locally and on a clean Ubuntu 24.04 hosted runner.
+
+[Hosted native replay](https://github.com/metalogiclabs/mathgraph/actions/runs/45355578637), experiment commit `c66267347f2f83934f07b947401854c82a50ff37`. The actual artifact ZIP was downloaded and independently checked: SHA-256 `8e41438b1962987d765e1c8a90fcd5fbf8b151d5158ca60f5af734b8c9149756`, 38 ZIP files, all 37 manifest entries and CRCs correct. Raw x-coordinate discrepancies were independently recomputed from query time and x(t) = 100 + 7t. Released / compiled original / repair / withdrawal: 594 / 594 / 0 / 594 of 840; unchanged upstream C++ tests 10/10 in every arm. Original and withdrawal CSVs are byte-identical to the released native trace.
 
 `flight::profile::model::Tabulated` accepts and sorts its input states, but records the interpolation time origin from the input's first element before sorting. Query times use the chronological interval start. If the input's first element is not earliest, these origins differ and interpolated coordinates can be wrong.
 
