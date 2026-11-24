@@ -1,0 +1,117 @@
+name: Antaris XTCE namespace preservation - isolated
+on:
+  push:
+    branches: [experiment/antaris-xtce-namespace-20261124]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: antaris-inc/python-xtce
+          ref: 807ef4e16f2fdf6fa5d742e36242751ed3809499
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check exact upstream source and install native dependencies
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../receipts
+          git rev-parse HEAD | tee ../receipts/source.txt
+          test "$(git rev-parse HEAD)" = 807ef4e16f2fdf6fa5d742e36242751ed3809499
+          test "$(git hash-object xtce/xtcemsg.py)" = 0e0f8bee49a9df3fc183b67654b2425e1ec5dc55
+          test "$(git hash-object xtce/xtceschema.py)" = 763435a0eb2e60ee18668e7750b3a4b6df10cfd6
+          test "$(git hash-object xtce/test_xtceschema.py)" = 24dd03bdcd152efc6669e5295a61312a1466ee83
+          git rev-parse HEAD^{tree} | tee ../receipts/tree.txt
+          python --version | tee ../receipts/python.txt
+          python -m pip install -e . pytest pytest-subtests pytest-cov 2>&1 | tee ../receipts/install.log
+          python -m pip freeze --all > ../receipts/dependencies.txt
+      - name: Run original author nested namespace tests
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q xtce/test_xtceschema.py -k TestNestedSpaceSystems 2>&1 | tee ../receipts/author-tests.log
+      - name: Test original fixture across schema lookup and actual offline codec
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > ../receipts/probe.py <<'PY'
+          import json
+          from pathlib import Path
+          from bitarray import bitarray
+          from xtce import xtceschema as schema, xtcemsg as msg
+          from xtce.test_xtceschema import TestNestedSpaceSystems
+
+          # Original author fixture, not a researcher-rewritten schema.
+          root = schema.from_bytes(TestNestedSpaceSystems.NESTED_XTCE)
+          Path("../receipts/original-fixture.xml").write_bytes(TestNestedSpaceSystems.NESTED_XTCE)
+          root_codec = msg.SpaceSystemEncoder(root)
+          records = []
+          for path, packet, width in [
+              ("", "RootPacket", 8),
+              ("Payload", "PayloadPacket", 16),
+              ("Platform", "PlatformPacket", 32),
+          ]:
+              local = root.get_subsystem(path) if path else root
+              qualified = f"{path}/{packet}" if path else packet
+              paramtype = f"{path}/sensor_type" if path else "sensor_type"
+              container = root.get_sequence_container(qualified)
+              assert container is local.get_sequence_container(packet)
+              assert root.get_entry_type(paramtype).data_encoding.sizeInBits == width
+              local_codec = msg.SpaceSystemEncoder(local)
+              for value in [0, 1, 42, 127, 255]:
+                  # Independent positive integer, big-endian oracle for these widths.
+                  expected = bitarray()
+                  expected.frombytes(value.to_bytes(width // 8, "big"))
+                  direct = local_codec.encode(msg.Message(message_type=container, entries={"sensor": value}))
+                  actual = root_codec.encode(msg.Message(message_type=container, entries={"sensor": value}))
+                  assert direct == expected
+                  assert local_codec.decode(container, expected).entries["sensor"] == value
+                  try:
+                      decoded_correct = root_codec.decode(container, expected).entries["sensor"]
+                      correct_error = None
+                  except ValueError as exc:
+                      decoded_correct, correct_error = None, str(exc)
+                  try:
+                      decoded_actual = root_codec.decode(container, actual).entries["sensor"]
+                  except ValueError:
+                      decoded_actual = None
+                  records.append({
+                      "path": qualified, "value": value,
+                      "oracle_bits": expected.to01(), "local_bits": direct.to01(),
+                      "root_encoder_bits": actual.to01(),
+                      "root_decode_correct_packet": decoded_correct,
+                      "root_decode_correct_packet_error": correct_error,
+                      "root_decode_root_encoded_packet": decoded_actual,
+                  })
+          out = Path("../receipts")
+          (out / "observations.json").write_text(json.dumps(records, indent=2))
+          root_cases = [r for r in records if "/" not in r["path"]]
+          child_cases = [r for r in records if "/" in r["path"]]
+          assert all(r["root_encoder_bits"] == r["oracle_bits"] and r["root_decode_correct_packet"] == r["value"] for r in root_cases)
+          bad = [r for r in child_cases if len(r["root_encoder_bits"]) == 8 and r["root_encoder_bits"] != r["oracle_bits"] and r["root_decode_correct_packet_error"] is not None and r["root_decode_root_encoded_packet"] == r["value"]]
+          print(f"ROOT_CONTROL {len(root_cases)}/5")
+          print(f"CHILD_LOCAL_CONTROL {len(child_cases)}/10")
+          print(f"ROOT_CODEC_CHILD_NAMESPACE_MISMATCH {len(bad)}/10")
+          assert len(bad) == 10, "predicted complete namespace mismatch not reproduced"
+          print("WARRANTED_NATIVE_OBSERVATION_IF_SOURCE_AND_RECEIPTS_PASS; root-encoder child-container contract requires maintainer clarification")
+          PY
+          PYTHONPATH="$PWD" python ../receipts/probe.py 2>&1 | tee ../receipts/probe.log
+          git diff --exit-code
+          git diff --cached --exit-code
+          git rev-parse HEAD | tee ../receipts/final-source.txt
+          test "$(cat ../receipts/source.txt)" = "$(cat ../receipts/final-source.txt)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: antaris-xtce-namespace-receipts
+          path: receipts/
