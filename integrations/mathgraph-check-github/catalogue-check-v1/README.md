@@ -1,8 +1,8 @@
 # Retained failure checks with 104-prompt accounting
 
-This local Check command executes four retained profiles on two exact Git
+This local Check command executes five retained profiles on two exact Git
 revisions and writes an outcome for every prompt in the canonical catalogue.
-All four profiles run by default, including when an earlier profile reports a
+All five profiles run by default, including when an earlier profile reports a
 discrepancy or cannot complete.
 
 ```bash
@@ -28,6 +28,7 @@ with the underlying adapters retaining their separate process deadlines. Use
 | `junit-status-preservation-v1` | 8 | Error/failure versus success through JUnit rows and HTML |
 | `suite-per-case-agreement-v1` | 5 | Keyed per-case agreement versus equal aggregate totals |
 | `suite-refusal-integrity-v1` | 18 | Deliberate parser refusal versus failed test apparatus |
+| `capstone-axiom-admission-v1` | 4 | Kernel, permitted-foundation and native controls versus an unauthorized private axiom |
 
 The five agreement fixtures each contain four backends and five presets. They
 exercise actual Reports consumers on controlled evidence, not four parser
@@ -44,11 +45,18 @@ general failure recovery and complete catalogue coverage are not established.
 ## What the 104 rows mean
 
 `catalogue.json` preserves the stable IDs, names and prompts of revision
-**2026-11-22-r2**. It records the exact canonical source digest and durable link.
+**2026-11-26-r3**. This publication correction retitles item 104 from `Value` to
+`Assurance value`, distinguishing measured assurance benefit from item 4's
+governing `Values`. IDs, prompt texts, groups and finite mappings are unchanged.
+Its source points to an immutable public predecessor JSON
+snapshot and records that snapshot's SHA-256. The private manuscript's filename,
+version and digest remain as historical origin metadata, without an account link.
+The public snapshot reproduces all 104 prompts; the private manuscript's broader
+crosswalk and evidence annotations are not included or newly qualified here.
 Every entry remains `CANDIDATE_PROMPT`. The executable mappings in `catalogue.mjs`
 are editorial connections to finite obligations and may overlap.
 
-Currently **16 prompts have a mapped finite facet** and **88 have no executable
+Currently **17 prompts have a mapped finite facet** and **87 have no executable
 connected to this command**. Neither number is a coverage percentage. Every row
 records `full_family_coverage: UNESTABLISHED`; even an observed agreement cannot
 close all the mechanisms represented by a broad prompt.
@@ -61,7 +69,7 @@ close all the mechanisms represented by a broad prompt.
 | `NOT_RUN` | At least one connected retained profile was explicitly omitted |
 | `UNSUPPORTED_BY_THIS_COMMAND` | No executable is connected to the prompt here; this is not a finding of inapplicability or absence of capabilities elsewhere in Check |
 
-`--profiles` accepts a comma-separated subset of the four exact profile IDs.
+`--profiles` accepts a comma-separated subset of the five exact profile IDs.
 Omitted profiles are recorded as `NOT_RUN`; a partial run cannot become a
 completed all-profile result. Missing modules, unsupported source shapes,
 unavailable tools and incomplete process observations are `UNKNOWN`, not
@@ -77,7 +85,7 @@ unknown. No earlier acceptance verdict is reused.
   raw logs, result and scoped report.
 
 The output directory must be new, preserving prior failures and UNKNOWNs. Exit
-**0** means all four retained profiles completed and agreed with their finite
+**0** means all five retained profiles completed and agreed with their finite
 head obligations. Exit **1** means complete execution with discrepancies. Exit
 **2** means UNKNOWN, NOT_RUN or a command error. No exit code asserts full
 104-family coverage, permission to deploy, or a measured improvement in value.
@@ -87,7 +95,17 @@ head obligations. Exit **1** means complete execution with discrepancies. Exit
 See [the frozen qualification](../../../experiments/check-catalogue-v1/README.md)
 for original, partial repair, combined repair, withdrawal, unchanged and missing
 source controls. Existing XML and status qualifications remain separate evidence.
-The [104-prompt L4YAML audit](https://chatgpt.com/library?file_id=libfile_fde3_f-4065aad4be4c8191a78a806cf61a93db_14752ef8670c819190e14bcb5a7d703e&account_id=personal)
-provides the EA01/EA03/EA04 witness lineage. It is not itself an executable Check
-invocation. Axiom admission, theorem adequacy/vacuity, numerics, composition,
-general input coverage and value still need their own retained obligations.
+The frozen qualification documents the controlled EA01/EA03/EA04 witness lineage.
+The capstone profile adds four controls through pinned production gate bytes;
+[PR #287](https://github.com/metalogiclabs/mathgraph/pull/287) identifies the
+five-profile qualification at `58ddb19e00e6097d2196d7a1a4760ccb653924d5` and its
+original, repair and withdrawal runs. The older four-profile qualification is
+retained as historical lineage, not a description of the current dispatcher.
+Theorem adequacy/vacuity, numerics, composition, general input coverage and value
+still need their own retained obligations.
+
+The successful historical [five-profile Actions run 45005108553](https://github.com/metalogiclabs/mathgraph/actions/runs/45005108553)
+qualified the earlier source commit `58ddb19e00e6097d2196d7a1a4760ccb653924d5`,
+not this r3 provenance and title correction. Source qualification must identify
+the exact revision used; neither the old run nor a repository merge is an
+institutional endorsement or a whole-family coverage result.

@@ -1,11 +1,17 @@
 {
   "schema": "mathgraph.failure-catalogue.v1",
-  "revision": "2026-11-22-r2",
+  "revision": "2026-11-26-r3",
   "source": {
-    "url": "https://chatgpt.com/library?file_id=libfile_fde3_f-d8e002a479d88191a73ad3fd557ec93c_14752ef8670c819190e14bcb5a7d703e&account_id=personal",
-    "filename": "MathGraph_Failure_Catalogue_104_2026-11-22.md",
-    "version": "0",
-    "sha256": "af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe"
+    "url": "https://github.com/metalogiclabs/mathgraph/blob/58ddb19e00e6097d2196d7a1a4760ccb653924d5/integrations/mathgraph-check-github/catalogue-check-v1/catalogue.json",
+    "filename": "catalogue.json",
+    "sha256": "13f1bee06b12fcafbaada31c7e4ed0818e40c3885355bd538d71bb0f5de29886",
+    "relationship": "Public predecessor snapshot. Revision r3 preserves all 104 IDs, prompt texts, editorial groups and finite mappings; ID 104 is retitled from Value to Assurance value. The historical snapshot contains a private manuscript link, which is not required to inspect or reproduce these prompts.",
+    "manuscript_origin": {
+      "filename": "MathGraph_Failure_Catalogue_104_2026-11-22.md",
+      "version": "0",
+      "sha256": "af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe",
+      "availability": "Private provenance record; its evidence annotations and broader crosswalk are not reproduced in this JSON."
+    }
   },
   "boundary": "104 candidate search prompts. Numbering and mappings do not establish independent mechanisms, witnessed defects, executable coverage or exhaustiveness.",
   "items": [
@@ -1158,7 +1164,7 @@
     },
     {
       "id": 104,
-      "title": "Value",
+      "title": "Assurance value",
       "prompt": "Additional assurance work fails to improve the independently specified decision outcome or its fully measured cost.",
       "group": "IX — Added explicit candidates",
       "questions": [

@@ -4,12 +4,20 @@ import {CATALOGUE,PROFILES,coverageFor,validateCatalogue} from './catalogue.mjs'
 
 const records=status=>Object.fromEntries(PROFILES.map(p=>[p.id,{status,reason:null,base:{cases:2,mismatches:0},head:{cases:2,mismatches:0}}]));
 
+test('catalogue provenance uses a public immutable snapshot without private account links',()=>{
+ assert.match(CATALOGUE.source.url,/^https:\/\/github\.com\/metalogiclabs\/mathgraph\/blob\/[a-f0-9]{40}\/integrations\/mathgraph-check-github\/catalogue-check-v1\/catalogue\.json$/);
+ assert.match(CATALOGUE.source.sha256,/^[a-f0-9]{64}$/);
+ assert.doesNotMatch(JSON.stringify(CATALOGUE),/chatgpt\.com\/library|account_id=|libfile_/);
+ assert.equal(CATALOGUE.source.manuscript_origin.sha256,'af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe');
+});
+
 test('the canonical 104 prompts keep stable IDs and candidate status',()=>{
  assert.equal(CATALOGUE.items.length,104);
  assert.deepEqual(CATALOGUE.items.map(x=>x.id),Array.from({length:104},(_,i)=>i+1));
  assert.equal(CATALOGUE.items[84].title,'Security and trust boundaries');
  assert.equal(CATALOGUE.items[95].title,'Unknown unknowns');
- assert.equal(CATALOGUE.items[103].title,'Value');
+ assert.equal(CATALOGUE.items[3].title,'Values');
+ assert.equal(CATALOGUE.items[103].title,'Assurance value');
  assert.ok(CATALOGUE.items.every(x=>x.lifecycle==='CANDIDATE_PROMPT'&&x.prompt.length>20));
  const duplicate=structuredClone(CATALOGUE);duplicate.items[1].id=1;
  assert.throws(()=>validateCatalogue(duplicate),/CATALOGUE_IDS/);
