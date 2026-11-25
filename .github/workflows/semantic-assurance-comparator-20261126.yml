@@ -1,0 +1,189 @@
+name: Semantic assurance comparator - OpenC3 calibration
+on:
+  push:
+    branches: [experiment/semantic-assurance-comparator-20261126]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      AWS_CONFIG_FILE: /dev/null
+      AWS_SHARED_CREDENTIALS_FILE: /dev/null
+      AWS_ACCESS_KEY_ID: testing
+      AWS_SECRET_ACCESS_KEY: testing
+      AWS_EC2_METADATA_DISABLED: "true"
+      OPENC3_BUCKET_USERNAME: testing
+      OPENC3_BUCKET_PASSWORD: testing
+      OPENC3_NO_EXT: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 791b3492ed8d6a7f39bd240837fc601ac491278e
+          path: before
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          path: after
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify source and replay independent cohort
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p receipts
+          test "$(git -C before rev-parse HEAD)" = 791b3492ed8d6a7f39bd240837fc601ac491278e
+          test "$(git -C after rev-parse HEAD)" = 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          for a in before after; do
+            git -C "$a" rev-parse HEAD HEAD^{tree} > "receipts/$a-source.txt"
+            sha256sum "$a/openc3/python/uv.lock" >> receipts/locks.txt
+          done
+          p=experiments/semantic-assurance-comparator-20261126/probe.py
+          echo "628cacc8674dadd89f4d9fc8a58885d1ddb8d536156facc5422e75b53cdadda8  $p" | sha256sum -c -
+          python "$p" before/openc3/python/openc3/accessors/accessor.py after/openc3/python/openc3/accessors/accessor.py receipts/observations.json | tee receipts/probe.log
+      - name: Common original and merged native test cohorts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install uv
+          uv --version > receipts/uv-version.txt
+          python --version > receipts/python-version.txt
+          root="$PWD"
+          for cohort in before after; do
+            mkdir -p "cohorts/$cohort"
+            for f in test_accessor.py test_json_accessor.py; do
+              cp "$cohort/openc3/python/test/accessors/$f" "cohorts/$cohort/$f"
+            done
+          done
+          sha256sum cohorts/*/*.py > receipts/test-hashes.txt
+          for arm in before after; do
+            (
+              cd "$arm/openc3/python"
+              uv sync --frozen 2>&1 | tee "$root/receipts/$arm-install.log"
+              for cohort in before after; do
+                set +e
+                uv run --frozen python -m unittest discover -v -s "$root/cohorts/$cohort" 2>&1 | tee "$root/receipts/$arm-tests-$cohort.log"
+                rc="$?"
+                set -e
+                echo "$rc" > "$root/receipts/$arm-tests-$cohort.exit"
+              done
+            )
+            git -C "$arm" diff --exit-code
+            git -C "$arm" diff --cached --exit-code
+          done
+          test "$(cat receipts/before-tests-before.exit)" = 0
+          test "$(cat receipts/after-tests-before.exit)" = 0
+          test "$(cat receipts/after-tests-after.exit)" = 0
+          # Nonzero alone does not establish a reproduced defect: review the log.
+          test "$(cat receipts/before-tests-after.exit)" != 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cosmos-native-comparator
+          path: receipts/
+  sonar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 791b3492ed8d6a7f39bd240837fc601ac491278e
+          path: before
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          path: after
+          persist-credentials: false
+      - name: Launch isolated real SonarQube
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sonar-receipts
+          test "$(git -C before rev-parse HEAD)" = 791b3492ed8d6a7f39bd240837fc601ac491278e
+          test "$(git -C after rev-parse HEAD)" = 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          test "$(git hash-object before/openc3/python/openc3/accessors/accessor.py)" = 97c3f9bd2401532bd2bc11db5af54e0dd8a560b4
+          test "$(git hash-object after/openc3/python/openc3/accessors/accessor.py)" = a541c9c574994fa41e4d9681fffb00ab3fae5278
+          sudo sysctl -w vm.max_map_count=524288
+          sudo sysctl -w fs.file-max=131072 || true
+          docker network create semantic-lab
+          docker pull sonarqube:26.11.0.134175-community
+          docker pull sonarsource/sonar-scanner-cli:latest
+          docker image inspect sonarqube:26.11.0.134175-community --format '{{json .RepoDigests}}' > sonar-receipts/server-image-digests.json
+          docker image inspect sonarsource/sonar-scanner-cli:latest --format '{{json .RepoDigests}}' > sonar-receipts/scanner-image-digests.json
+          docker run --rm sonarsource/sonar-scanner-cli:latest --version > sonar-receipts/scanner-version.txt 2>&1
+          docker run -d --name sq --network semantic-lab -p 127.0.0.1:9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:26.11.0.134175-community
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:9000/api/system/status | jq -e '.status=="UP"' >/dev/null; then break; fi
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:9000/api/system/status | tee sonar-receipts/system-status.json | jq -e '.status=="UP"'
+          curl -fsS http://127.0.0.1:9000/api/server/version | tee sonar-receipts/server-version.txt
+          grep -Fx 26.11.0.134175 sonar-receipts/server-version.txt
+      - name: Same scanner and profile, before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          pass="$(openssl rand -hex 24)"
+          echo "::add-mask::$pass"
+          curl -fsS -u admin:admin -X POST http://127.0.0.1:9000/api/users/change_password --data-urlencode login=admin --data-urlencode previousPassword=admin --data-urlencode "password=$pass" >/dev/null
+          token="$(curl -fsS -u "admin:$pass" -X POST http://127.0.0.1:9000/api/user_tokens/generate --data-urlencode name=semantic-comparator | jq -er '.token')"
+          echo "::add-mask::$token"
+          api() { curl -fsS -u "$token:" "http://127.0.0.1:9000/$1"; }
+          api api/plugins/installed > sonar-receipts/plugins.json
+          api 'api/qualityprofiles/search?language=py' > sonar-receipts/python-profiles.json
+          for arm in before after; do
+            key="cosmos-$arm"
+            docker run --rm --network semantic-lab --user 0:0 \
+              -e SONAR_HOST_URL=http://sq:9000 -e SONAR_TOKEN="$token" \
+              -v "$PWD/$arm:/usr/src:ro" \
+              sonarsource/sonar-scanner-cli:latest \
+              -Dsonar.projectKey="$key" -Dsonar.projectBaseDir=/usr/src \
+              -Dsonar.sources=openc3/python/openc3 -Dsonar.sourceEncoding=UTF-8 \
+              -Dsonar.python.version=3.12 -Dsonar.scm.disabled=true \
+              -Dsonar.working.directory=/tmp/sonar-work \
+              2>&1 | tee "sonar-receipts/$arm-scan.log"
+            for i in $(seq 1 120); do
+              api "api/ce/component?component=$key" > "sonar-receipts/$arm-ce.json"
+              if jq -e '.current.status == "SUCCESS" and (.queue|length)==0' "sonar-receipts/$arm-ce.json" >/dev/null; then break; fi
+              if jq -e '.current.status == "FAILED" or .current.status == "CANCELED"' "sonar-receipts/$arm-ce.json" >/dev/null; then exit 1; fi
+              sleep 5
+            done
+            jq -e '.current.status=="SUCCESS" and (.queue|length)==0' "sonar-receipts/$arm-ce.json"
+            api "api/qualitygates/project_status?projectKey=$key" > "sonar-receipts/$arm-gate.json"
+            api "api/qualityprofiles/search?project=$key&language=py" > "sonar-receipts/$arm-profile.json"
+            page=1
+            while true; do
+              f="sonar-receipts/$arm-issues-$page.json"
+              api "api/issues/search?componentKeys=$key&ps=100&p=$page" > "$f"
+              jq -e --arg key "$key" 'all(.issues[]; .project == $key)' "$f" >/dev/null
+              total="$(jq -er '.paging.total' "$f")"
+              if (( page * 100 >= total )); then break; fi
+              page=$((page+1))
+              if (( page>100 )); then echo "Issue search exceeded supported result window"; exit 1; fi
+            done
+          done
+      - name: Retain server diagnostic log
+        if: always()
+        run: |
+          mkdir -p sonar-receipts
+          docker logs sq > sonar-receipts/server.log 2>&1 || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cosmos-sonar-comparator
+          path: sonar-receipts/
