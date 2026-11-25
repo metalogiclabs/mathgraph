@@ -1,0 +1,127 @@
+name: EIK live frontier read-only
+on:
+  push:
+    branches: [research/eik-live-frontier-20261125]
+    paths: ['.github/workflows/eik-live-frontier.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  query:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Pin and inspect official read-only client
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          git -C kit rev-parse HEAD > evidence/client-commit.txt
+          cp kit/miner/submit.py evidence/official-client.py
+          python -m pip install requests==2.34.2 websocket-client==1.8.0 xxhash==3.6.0
+          python -m pip freeze > evidence/dependencies.txt
+      - name: Official GET queries only, without a wallet
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import datetime,json,pathlib,subprocess,sys
+          root=pathlib.Path("evidence")
+          commands=[("boards",["boards"])]
+          commands += [("leaderboard-"+b,["leaderboard","--board",b]) for b in ("overall","rv32im","thumbv6m")]
+          commands += [("report-"+str(i),["report",str(i)]) for i in (50,52)]
+          results={}
+          for name,args in commands:
+              at=datetime.datetime.now(datetime.timezone.utc).isoformat()
+              try:
+                  p=subprocess.run([sys.executable,"miner/submit.py",*args],cwd="kit",capture_output=True,text=True,timeout=75)
+                  (root/(name+".stdout")).write_text(p.stdout)
+                  (root/(name+".stderr")).write_text(p.stderr)
+                  result={"queried_at_utc":at,"command":["python","miner/submit.py",*args],"exit_code":p.returncode}
+                  if p.returncode==0:
+                      data=json.loads(p.stdout)
+                      (root/(name+".json")).write_text(json.dumps(data,indent=2))
+                      result["verdict"]="READ_SUCCEEDED"
+                      print(name,json.dumps(data))
+                  else:
+                      result["verdict"]="UNKNOWN"
+                      print(name,p.returncode,p.stderr)
+              except Exception as e:
+                  result={"queried_at_utc":at,"verdict":"UNKNOWN","error":repr(e)}
+                  print(name,repr(e))
+              results[name]=result
+          (root/"query-status.json").write_text(json.dumps(results,indent=2))
+          assert len(results)==6
+          PY
+      - name: Read finalized Subnet 66 burn cost, without signing
+        run: |
+          set -euo pipefail
+          timeout 150s python - <<'PY'
+          import datetime,json,pathlib,struct,time
+          from decimal import Decimal
+          import websocket,xxhash
+          root=pathlib.Path("evidence")
+          transcript=[]
+          endpoint="wss://entrypoint-finney.opentensor.ai:443"
+          result={"queried_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"endpoint":endpoint,"netuid":66,"status":"UNKNOWN","transaction_submitted":False}
+          def twox128(value):
+              b=value.encode()
+              return b"".join(xxhash.xxh64(b,seed=i).intdigest().to_bytes(8,"little") for i in (0,1))
+          def key(pallet,item,param=b""):
+              return "0x"+(twox128(pallet)+twox128(item)+param).hex()
+          sock=None
+          try:
+              sock=websocket.create_connection(endpoint,timeout=25)
+              def rpc(method,params):
+                  time.sleep(1.05)
+                  ident=len(transcript)+1
+                  request={"jsonrpc":"2.0","id":ident,"method":method,"params":params}
+                  sock.send(json.dumps(request))
+                  response=json.loads(sock.recv())
+                  transcript.append({"request":request,"response":response})
+                  assert response["id"]==ident
+                  if "error" in response:raise RuntimeError(response["error"])
+                  return response["result"]
+              chain=rpc("system_chain",[])
+              genesis=rpc("chain_getBlockHash",[0])
+              block=rpc("chain_getFinalizedHead",[])
+              header=rpc("chain_getHeader",[block])
+              version=rpc("state_getRuntimeVersion",[block])
+              burn_key=key("SubtensorModule","Burn",struct.pack("<H",66))
+              raw=rpc("state_getStorage",[burn_key,block])
+              assert raw is not None,"Burn absent; do not interpret a storage default as a live quote"
+              value=bytes.fromhex(raw.removeprefix("0x"))
+              assert len(value)==8,("unexpected Burn SCALE layout",raw)
+              rao=int.from_bytes(value,"little")
+              allowed_key=key("SubtensorModule","NetworkRegistrationAllowed",struct.pack("<H",66))
+              allowed=rpc("state_getStorage",[allowed_key,block])
+              proof=rpc("state_getReadProof",[[burn_key,allowed_key],block])
+              result.update(status="READ_SUCCEEDED",chain=chain,genesis_hash=genesis,block_hash=block,block_number=int(header["number"],16),state_root=header["stateRoot"],runtime=version,burn_storage_key=burn_key,burn_raw_scale=raw,burn_rao=rao,burn_tao=str(Decimal(rao)/Decimal(10**9)),network_registration_allowed_raw=allowed,scope="Subnet 66 Burn storage only; transaction fees and any additional collateral are not quoted",read_proof=proof)
+              print(json.dumps(result,indent=2))
+          except Exception as e:
+              result["error"]=repr(e)
+              print(json.dumps(result,indent=2))
+          finally:
+              if sock:sock.close()
+              (root/"registration-cost.json").write_text(json.dumps(result,indent=2))
+              (root/"chain-rpc-transcript.json").write_text(json.dumps(transcript,indent=2))
+          PY
+      - name: Preserve observations and evidence integrity
+        if: always()
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path("evidence")
+          files={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*")) if p.is_file()}
+          (root/"SHA256SUMS.json").write_text(json.dumps(files,indent=2))
+          print(json.dumps({"files":len(files),"commands":"boards, leaderboard, report; finalized chain reads","wallet_used":False,"registration_sent":False,"entry_submitted":False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-live-frontier-read-only
+          path: evidence/
+          if-no-files-found: error
