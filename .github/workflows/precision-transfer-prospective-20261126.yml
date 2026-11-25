@@ -1,0 +1,76 @@
+name: Prospective precision transfer and ordinary property testing
+on:
+  push:
+    branches: [experiment/precision-transfer-prospective-20261126]
+    paths:
+      - .github/workflows/precision-transfer-prospective-20261126.yml
+      - experiments/precision-transfer-prospective-20261126/*.py
+      - experiments/precision-transfer-prospective-20261126/PROTOCOL.md
+permissions:
+  contents: read
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+defaults:
+  run:
+    shell: bash
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate apparatus before source selection
+        run: |
+          mkdir -p receipts
+          git rev-parse HEAD HEAD^{tree} > receipts/method-source.txt
+          sha256sum experiments/precision-transfer-prospective-20261126/*.py experiments/precision-transfer-prospective-20261126/PROTOCOL.md > receipts/method.sha256
+          python -m unittest discover -v -s experiments/precision-transfer-prospective-20261126 -p 'test_*.py' > receipts/apparatus-tests.log 2>&1
+          python --version > receipts/python-version.txt
+      - name: Freeze external registry, package versions and withheld labels
+        run: python experiments/precision-transfer-prospective-20261126/prepare.py | tee receipts/selection.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: precision-transfer-source-freeze
+          path: receipts/
+  native:
+    needs: freeze
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: precision-transfer-source-freeze
+          path: receipts
+      - name: Verify frozen method
+        run: sha256sum -c receipts/method.sha256
+      - name: Execute unchanged automatic and Hypothesis lanes
+        run: python experiments/precision-transfer-prospective-20261126/run.py | tee receipts/native-console.log
+      - name: Evaluate external labels only after predictions are sealed
+        run: python experiments/precision-transfer-prospective-20261126/judge.py | tee receipts/evaluation-console.log
+      - name: Record dependency and artifact identities
+        if: always()
+        run: |
+          python -m pip freeze --all > receipts/runtime-packages.txt
+          python - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path("receipts")
+          files={p.relative_to(root).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*")) if p.is_file() and p.name!="manifest.json"}
+          (root/"manifest.json").write_text(json.dumps(files,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: precision-transfer-native-evidence
+          path: receipts/
