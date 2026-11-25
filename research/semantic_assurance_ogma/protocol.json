@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "objective": "Qualify a real-source finite native-replay adapter and compare existing graph closure with an equally informed direct ledger.",
+  "disclosure": "Known historical Ogma boundary example; prospective adapter/control protocol, not blinded discovery or an independent flight requirement approval.",
+  "base_commit": "65fe4dea8cc3a5cf9d3fb303db216180d20bc5ed",
+  "source_commit": "cf0f913cc15c41705e803593297e89cd6056b839",
+  "source_path": "caseStudies/LiftPlusCruise/LPC_full_reqts_and_vars.json",
+  "source_sha256": "de648141d145e0a1316ee2c241a1da0f027dee2a54d8de8890a056655ff9744a",
+  "requirement_id": "LPC_KIAS_0",
+  "fulltext": "The vehicle shall always satisfy kias >= 0.0",
+  "source_formula": "H((kias >= 0.0))",
+  "method_export_sha256": "2754f9a2debefbe87e8dc9d9e0a4c5226473781bd21433ed80f3accf802f1443",
+  "assigned_control_sha256": "2e9d3bbc0e4188853798b85cb27e008fecc676e109e881ebd25a7c5a3b73bde5",
+  "domain": {
+    "signal": "kias",
+    "encoding": "IEEE-754 binary32; native input bits independently checked",
+    "tokens": ["-0x1p+0", "-0x1p-149", "-0x0p+0", "0x0p+0", "0x1p-149", "0x1p-1", "0x1p+0"],
+    "lengths": [1, 2, 3, 4],
+    "monitor_reset": "Fresh native process per trace, including certificate verification",
+    "observation": "Cumulative violation callbacks after each sample; past-always includes current sample",
+    "excluded": ["NaN", "infinity", "other signal mappings", "other trace domains", "physical sensor fidelity", "deployment permission"]
+  },
+  "variants": {
+    "unpatched": {
+      "archive": "fret_ogma_postcensus_native_44435948686.zip",
+      "archive_sha256": "0d4fd85dfe2b5c4cdd586bec789a2520bd854d8c0183aede93bfd3ea81d66f8b",
+      "repository": "metalogiclabs/fret", "run_id": 44435948686, "artifact_id": 14489079218,
+      "prefix": "native/047-assigned-control/",
+      "monitor_sha256": "89f8dfc5b25af36c5707f9799b23e884ef9b0319b9a8836975c3ac7cdeae3909",
+      "expected": "REJECTED_TRANSFER"
+    },
+    "patched": {
+      "archive": "ogma_greater_boundary_fixed_44439625075.zip",
+      "archive_sha256": "f3fda767f4c501f10faa518a9289e9192474f8a914a37b6775a62b56821c91a2",
+      "repository": "metalogiclabs/ogma", "run_id": 44439625075, "artifact_id": 14491054038,
+      "prefix": "native/",
+      "monitor_sha256": "1e880281db93896fc6cb949b38075987847b2796db75cde305d07af3a8053f03",
+      "expected": "WARRANTED_BOUNDED"
+    }
+  },
+  "controls": [
+    "source_withdrawal", "patched_monitor_withdrawal", "unpatched_monitor_withdrawal",
+    "patched_verifier_withdrawal", "patched_native_evidence_withdrawal", "reinstatement",
+    "source_substitution", "archive_substitution", "monitor_substitution",
+    "certificate_corruption", "certificate_row_withdrawal", "certificate_duplicate_row",
+    "changed_domain", "changed_claim", "nonfinite_input", "deployment_claim"
+  ],
+  "comparison": "Both arms receive the same independently reexecuted native tables, source identity, domain and revocation events. Record shared acquisition counts/time and separate closure time. This cannot establish evidence-discovery, human-cost, architectural or economic superiority.",
+  "positive_boundary": "Finite exhaustive observation under declared compiler/runtime assumptions, not an unbounded C proof, Lean proof of this adapter, or mission approval.",
+  "source_caveat": "Original FRET fixture has four blank Copilot assignments. Both native monitors came from the same derived input supplying those assignments; the requirement itself is unchanged."
+}
