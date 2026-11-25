@@ -49,6 +49,54 @@ jobs:
           if any(not line.endswith(" 0") for line in pathlib.Path("evidence/status.txt").read_text().splitlines()):
               raise SystemExit("UNKNOWN: official client request failed")
           PY
+      - name: Fetch public champion status and evaluation reports
+        shell: bash
+        run: |
+          set -uo pipefail
+          ids=$(python3 - <<'PY'
+          import json,pathlib
+          print(" ".join(map(str, sorted({json.loads((pathlib.Path("evidence")/(b+".json")).read_text())["reference"]["submission"] for b in ("overall","rv32im","thumbv6m")} - {None}))))
+          PY
+          )
+          for id in $ids; do
+            for cmd in status report; do
+              timeout 75s python3 kit/miner/submit.py "$cmd" "$id" > "evidence/${cmd}-${id}.json" 2> "evidence/${cmd}-${id}.stderr"
+              printf '%s %s %s\n' "$cmd" "$id" "$?" >> evidence/report-status.txt
+            done
+          done
+          cat evidence/report-status.txt
+          python3 - <<'PY'
+          import json,pathlib
+          for p in sorted(pathlib.Path("evidence").glob("*-*.json")):
+              print("FILE",p,p.stat().st_size)
+              try: d=json.loads(p.read_text())
+              except Exception as e:
+                  print("UNKNOWN",e); continue
+              if p.stat().st_size < 45000:
+                  print(json.dumps(d,indent=2))
+              else:
+                  def walk(v,path=""):
+                      if isinstance(v,dict):
+                          for k,w in v.items():
+                              walk(w,path+"/"+k)
+                      elif isinstance(v,list):
+                          if len(v)<100:
+                              for i,w in enumerate(v): walk(w,path+"/"+str(i))
+                      elif any(k in path.lower() for k in ("score","seed","metric","ratio","instruction","board","promotion","champion","reference")):
+                          print(path,str(v)[:250])
+                  walk(d)
+          PY
+          rm evidence/checksums.sha256
+          sha256sum evidence/* > checksums.sha256
+          mv checksums.sha256 evidence/
+      - name: Check report JSON
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          status=pathlib.Path("evidence/report-status.txt").read_text().splitlines()
+          assert status and all(s.endswith(" 0") for s in status), status
+          for p in pathlib.Path("evidence").glob("*-*.json"): assert isinstance(json.loads(p.read_text()),(dict,list)), p
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
