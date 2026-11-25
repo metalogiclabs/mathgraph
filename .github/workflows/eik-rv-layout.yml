@@ -33,28 +33,28 @@ jobs:
           set -euo pipefail
           git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
           git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
-          mkdir evidence
+          mkdir rv-layout-evidence
           python research/eik/rv_layout.py prior/candidate.c candidate.c "$VARIANT"
-          cp candidate.c evidence/
-          sha256sum candidate.c > evidence/source.sha256
+          cp candidate.c rv-layout-evidence/
+          sha256sum candidate.c > rv-layout-evidence/source.sha256
           gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h prior/candidate.c -o baseline.so
           gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h candidate.c -o candidate.so
           gcc -O2 research/eik/rv_diff.c -ldl -o diff
-          ./diff "$PWD/baseline.so" "$PWD/candidate.so" | tee evidence/native-differential.txt
+          ./diff "$PWD/baseline.so" "$PWD/candidate.so" | tee rv-layout-evidence/native-differential.txt
           pip install --require-hashes -r kit/requirements.txt
       - name: Official gate and two matched-seed measurements
         run: |
           set -euo pipefail
           cd kit
           python -m eik setup
-          python -m eik check ../candidate.c 2>&1 | tee ../evidence/check.log
-          python -m eik measure ../candidate.c --seed 1284956104 --out ../evidence/matched.json
-          python -m eik measure ../candidate.c --seed 20261219 --out ../evidence/heldout.json
+          python -m eik check ../candidate.c 2>&1 | tee ../rv-layout-evidence/check.log
+          python -m eik measure ../candidate.c --seed 1284956104 --out ../rv-layout-evidence/matched.json
+          python -m eik measure ../candidate.c --seed 20261219 --out ../rv-layout-evidence/heldout.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: eik-rv-layout-${{ matrix.variant }}
-          path: evidence/
+          path: rv-layout-evidence/
           if-no-files-found: error
   reconcile:
     needs: measure
@@ -130,20 +130,20 @@ jobs:
           git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
           cd kit
           git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
-          mkdir evidence
+          mkdir rv-layout-evidence
           cp ../selected/candidate.c .
-          sha256sum candidate.c > evidence/source.sha256
+          sha256sum candidate.c > rv-layout-evidence/source.sha256
           pip install --require-hashes -r requirements.txt
           python -m eik setup
           if [ "$TARGET" = host ]; then
-            python -m eik fullcheck candidate.c --function "$FN" --out evidence/report.json
+            python -m eik fullcheck candidate.c --function "$FN" --out rv-layout-evidence/report.json
           else
             sudo apt-get update
             sudo apt-get install -y qemu-user
-            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out evidence/report.json
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out rv-layout-evidence/report.json
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: eik-rv-layout-full-${{ matrix.function }}-${{ matrix.target }}
-          path: kit/evidence/
+          path: kit/rv-layout-evidence/
