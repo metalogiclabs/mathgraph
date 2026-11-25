@@ -1,5 +1,7 @@
 # Six-case discovery pilot: completed paired comparison
 
+Post-trial source clarification: [clock_followup.md](clock_followup.md) records FRET's existing unit-handling documentation and the linked verification models' one-second active configurations. The frozen comparison below is unchanged.
+
 The two isolated adaptive investigators reached the same supported final conclusions. Neither locked final contains an unsupported decisive warrant. This is a small operationally held-out pilot, not evidence of a unique MathGraph architectural advantage.
 
 The protocol, prompts, selector, broker and adjudication rubric were publicly frozen at `80748dca54b82983c621b35be08389143f18048a` before source acquisition and case selection. These post-trial files do not change that freeze. The broker and selector passed 25 pre-case tests.
