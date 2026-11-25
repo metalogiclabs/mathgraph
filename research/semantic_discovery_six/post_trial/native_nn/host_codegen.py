@@ -43,7 +43,8 @@ def qualify(kind2, z3, out):
     run('kind2-version', [kind2, '--version'])
     run('z3-version', [z3, '--version'])
     run('rustc-version', ['rustup', 'run', '1.85.0', 'rustc', '--version'])
-    run('original-export-parse', [kind2, '-json', '--only_parse', 'true', '--lus_main',
+    run('original-export-parse', [kind2, '-json', '--smt_solver', 'Z3', '--z3_bin', z3,
+                                 '--only_parse', 'true', '--lus_main',
                                  'nn_12B_with_contracts_PP', out / 'original_export.lus'])
     common = [kind2, '-json', '--smt_solver', 'Z3', '--z3_bin', z3,
               '--enable', 'BMC', '--enable', 'IND', '--timeout', '60']
