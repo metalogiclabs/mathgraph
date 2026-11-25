@@ -1,0 +1,133 @@
+name: OpenC3 Sonar comprehensive profile sensitivity
+on:
+  push:
+    branches: [experiment/semantic-assurance-sonar-sensitivity-20261126]
+    paths: [.github/workflows/semantic-assurance-sonar-comprehensive-20261126.yml]
+permissions:
+  contents: read
+jobs:
+  sonar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 791b3492ed8d6a7f39bd240837fc601ac491278e
+          path: before
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          path: after
+          persist-credentials: false
+      - name: Launch isolated real SonarQube
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sonar-receipts
+          test "$(git -C before rev-parse HEAD)" = 791b3492ed8d6a7f39bd240837fc601ac491278e
+          test "$(git -C after rev-parse HEAD)" = 774c3ad3109f7caa7875ba420b632bf4b8296e32
+          test "$(git hash-object before/openc3/python/openc3/accessors/accessor.py)" = 97c3f9bd2401532bd2bc11db5af54e0dd8a560b4
+          test "$(git hash-object after/openc3/python/openc3/accessors/accessor.py)" = a541c9c574994fa41e4d9681fffb00ab3fae5278
+          sudo sysctl -w vm.max_map_count=524288
+          sudo sysctl -w fs.file-max=131072 || true
+          docker network create semantic-lab
+          docker pull sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba
+          docker pull sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84
+          docker image inspect sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba --format '{{json .RepoDigests}}' > sonar-receipts/server-image-digests.json
+          docker image inspect sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 --format '{{json .RepoDigests}}' > sonar-receipts/scanner-image-digests.json
+          docker run --rm sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 --version > sonar-receipts/scanner-version.txt 2>&1
+          docker run -d --name sq --network semantic-lab -p 127.0.0.1:9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:9000/api/system/status | jq -e '.status=="UP"' >/dev/null; then break; fi
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:9000/api/system/status | tee sonar-receipts/system-status.json | jq -e '.status=="UP"'
+          curl -fsS http://127.0.0.1:9000/api/server/version | tee sonar-receipts/server-version.txt
+          grep -Fx 26.11.0.134175 sonar-receipts/server-version.txt
+      - name: Same scanner and profile, before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          pass="Aa1!$(openssl rand -hex 20)"
+          echo "::add-mask::$pass"
+          curl --fail-with-body -sS -u admin:admin -X POST http://127.0.0.1:9000/api/users/change_password --data-urlencode login=admin --data-urlencode previousPassword=admin --data-urlencode "password=$pass" >/dev/null
+          token="$(curl -fsS -u "admin:$pass" -X POST http://127.0.0.1:9000/api/user_tokens/generate --data-urlencode name=semantic-comparator | jq -er '.token')"
+          echo "::add-mask::$token"
+          api() { curl --fail-with-body -sS -u "$token:" "http://127.0.0.1:9000/$1"; }
+          api api/plugins/installed > sonar-receipts/plugins.json
+          api 'api/qualityprofiles/search?language=py' > sonar-receipts/profiles-available.json
+          curl --fail-with-body -sS -u "$token:" -X POST http://127.0.0.1:9000/api/qualityprofiles/set_default --data-urlencode language=py --data-urlencode 'qualityProfile=Sonar way comprehensive' >/dev/null
+          api 'api/qualityprofiles/search?language=py' > sonar-receipts/python-profiles.json
+          profile="$(jq -er '[.profiles[] | select(.isDefault == true)] | if length == 1 then .[0].key else error("expected one default Python profile") end' sonar-receipts/python-profiles.json)"
+          jq -e --arg profile "$profile" 'any(.profiles[]; .key==$profile and .name=="Sonar way comprehensive" and .activeRuleCount==407)' sonar-receipts/python-profiles.json >/dev/null
+          page=1
+          while true; do
+            f="sonar-receipts/python-rules-$page.json"
+            api "api/rules/search?activation=true&qprofile=$profile&languages=py&ps=500&p=$page" > "$f"
+            total="$(jq -er '.total' "$f")"
+            if (( page * 500 >= total )); then break; fi
+            page=$((page+1))
+            if (( page>20 )); then echo "Rule search exceeded supported result window"; exit 1; fi
+          done
+          for arm in before after; do
+            key="cosmos-$arm"
+            docker run --rm --network semantic-lab --user 0:0 \
+              -e SONAR_HOST_URL=http://sq:9000 -e SONAR_TOKEN="$token" \
+              -v "$PWD/$arm:/usr/src:ro" \
+              sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 \
+              -Dsonar.projectKey="$key" -Dsonar.projectBaseDir=/usr/src \
+              -Dsonar.sources=openc3/python/openc3 -Dsonar.sourceEncoding=UTF-8 \
+              -Dsonar.python.version=3.12 -Dsonar.scm.disabled=true \
+              -Dsonar.working.directory=/tmp/sonar-work \
+              2>&1 | tee "sonar-receipts/$arm-scan.log"
+            for i in $(seq 1 120); do
+              api "api/ce/component?component=$key" > "sonar-receipts/$arm-ce.json"
+              if jq -e '.current.status == "SUCCESS" and (.queue|length)==0' "sonar-receipts/$arm-ce.json" >/dev/null; then break; fi
+              if jq -e '.current.status == "FAILED" or .current.status == "CANCELED"' "sonar-receipts/$arm-ce.json" >/dev/null; then exit 1; fi
+              sleep 5
+            done
+            jq -e '.current.status=="SUCCESS" and (.queue|length)==0' "sonar-receipts/$arm-ce.json"
+            api "api/qualitygates/project_status?projectKey=$key" > "sonar-receipts/$arm-gate.json"
+            api "api/qualityprofiles/search?project=$key&language=py" > "sonar-receipts/$arm-profile.json"
+            jq -e --arg profile "$profile" '[.profiles[] | select(.language=="py")] | length==1 and .[0].key==$profile' "sonar-receipts/$arm-profile.json" >/dev/null
+            api "api/measures/component?component=$key&metricKeys=files,ncloc,violations" > "sonar-receipts/$arm-measures.json"
+            target="$key:openc3/python/openc3/accessors/accessor.py"
+            api "api/components/show?component=$target" > "sonar-receipts/$arm-accessor-component.json"
+            api "api/sources/raw?key=$target" > "sonar-receipts/$arm-accessor-indexed.py"
+            cmp "$arm/openc3/python/openc3/accessors/accessor.py" "sonar-receipts/$arm-accessor-indexed.py"
+            page=1
+            while true; do
+              f="sonar-receipts/$arm-hotspots-$page.json"
+              api "api/hotspots/search?projectKey=$key&ps=100&p=$page" > "$f"
+              total="$(jq -er '.paging.total' "$f")"
+              if (( page * 100 >= total )); then break; fi
+              page=$((page+1))
+              if (( page>100 )); then echo "Hotspot search exceeded supported result window"; exit 1; fi
+            done
+            page=1
+            while true; do
+              f="sonar-receipts/$arm-issues-$page.json"
+              api "api/issues/search?componentKeys=$key&ps=100&p=$page" > "$f"
+              jq -e --arg key "$key" 'all(.issues[]; .project == $key)' "$f" >/dev/null
+              total="$(jq -er '.paging.total' "$f")"
+              if (( page * 100 >= total )); then break; fi
+              page=$((page+1))
+              if (( page>100 )); then echo "Issue search exceeded supported result window"; exit 1; fi
+            done
+          done
+      - name: Retain server diagnostic log
+        if: always()
+        run: |
+          mkdir -p sonar-receipts
+          docker logs sq > sonar-receipts/server.log 2>&1 || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cosmos-sonar-comprehensive
+          path: sonar-receipts/
