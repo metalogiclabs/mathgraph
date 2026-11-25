@@ -1,5 +1,7 @@
 # Six-case discovery pilot: completed paired comparison
 
+Latest follow-up: [native temporal monitor qualification](native_nn_results.md) records the compiled component, finite boundary replay and clock-evidence withdrawal results. The complete NN claim remains UNKNOWN.
+
 Post-trial source clarification: [clock_followup.md](clock_followup.md) records FRET's existing unit-handling documentation and the linked verification models' one-second active configurations. The frozen comparison below is unchanged.
 
 The two isolated adaptive investigators reached the same supported final conclusions. Neither locked final contains an unsupported decisive warrant. This is a small operationally held-out pilot, not evidence of a unique MathGraph architectural advantage.
