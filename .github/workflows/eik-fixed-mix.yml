@@ -1,0 +1,68 @@
+name: EIK fixed algorithm comparison
+on:
+  push:
+    branches: [research/eik-official-score-20261125]
+    paths: ['.github/workflows/eik-fixed-mix.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ['rrr','rrt','rtr','rtt','trr','trt','ttr','ttt','rrr-sym','ttt-sym']
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pin source and construct fixed algorithms
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          curl --fail --location --retry 3 https://conjectures.io/v1/competitions/exact-integer-kernels/submissions/48/source -o original.c
+          echo 'c858c54e3e0b07b469d4445028a5ddd7c7ce579932bf42d4575cc3044ef61661  original.c' | sha256sum -c -
+          python - <<'PY'
+          import pathlib,re,os
+          s=pathlib.Path('original.c').read_text()
+          s=re.sub(r'^#ifndef EIK_SEL\n.*?^#endif\n','',s,count=1,flags=re.M|re.S)
+          s,n=re.subn(r'if \(\(t_w \* (?:t_w|t_m4)\) == (?:5|13|21|29|37|45|53|61)u\)', 'if (0)',s)
+          assert n==9,n
+          v=os.environ['VARIANT']
+          for fn,choice in zip(('sigmoid','tanh','exp'),v):
+              impl='eik_'+fn+'_r' if choice=='r' else 't_eik_'+fn
+              pattern=r'if \(EIK_SEL\)\s*return eik_'+fn+r'_r\(w\);\s*return t_eik_'+fn+r'\(w\);'
+              body='return '+impl+'(w);'
+              if fn=='tanh' and v.endswith('-sym'):
+                  body='if ((w & 0x7fffffffu) > 0x7f800000u) return w | 0x00400000u; return '+impl+'(w & 0x7fffffffu) | (w & 0x80000000u);'
+              s,n=re.subn(pattern,body,s)
+              assert n==1,(fn,n)
+          pathlib.Path('candidate.c').write_text(s)
+          PY
+          cp candidate.c evidence/
+          sha256sum original.c candidate.c > evidence/source.sha256
+          git rev-parse HEAD > evidence/evaluator.sha
+      - name: Install evaluator
+        working-directory: kit
+        run: |
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+      - name: Static gate and measure
+        working-directory: kit
+        run: |
+          set -o pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          cat evidence/measure.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-mix-${{ matrix.variant }}
+          path: kit/evidence/
