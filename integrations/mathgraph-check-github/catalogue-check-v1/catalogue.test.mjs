@@ -4,12 +4,23 @@ import {CATALOGUE,PROFILES,coverageFor,validateCatalogue} from './catalogue.mjs'
 
 const records=status=>Object.fromEntries(PROFILES.map(p=>[p.id,{status,reason:null,base:{cases:2,mismatches:0},head:{cases:2,mismatches:0}}]));
 
+test('the public catalogue is self-contained without private drafting provenance',()=>{
+ assert.equal(CATALOGUE.source.kind,'EDITORIAL_RESEARCH_CATALOGUE');
+ assert.equal(CATALOGUE.source.path,'integrations/mathgraph-check-github/catalogue-check-v1/catalogue.json');
+ assert.equal(CATALOGUE.source.executable_mapping,'catalogue.mjs');
+ assert.equal('url' in CATALOGUE.source,false);
+ assert.equal('manuscript_origin' in CATALOGUE.source,false);
+ assert.doesNotMatch(JSON.stringify(CATALOGUE),/chatgpt\.com\/library|account_id=|libfile_/);
+ assert.doesNotMatch(JSON.stringify(CATALOGUE.source),/https?:\/\/|58ddb19|074ddb7|\.md/);
+});
+
 test('the canonical 104 prompts keep stable IDs and candidate status',()=>{
  assert.equal(CATALOGUE.items.length,104);
  assert.deepEqual(CATALOGUE.items.map(x=>x.id),Array.from({length:104},(_,i)=>i+1));
  assert.equal(CATALOGUE.items[84].title,'Security and trust boundaries');
  assert.equal(CATALOGUE.items[95].title,'Unknown unknowns');
- assert.equal(CATALOGUE.items[103].title,'Value');
+ assert.equal(CATALOGUE.items[3].title,'Values');
+ assert.equal(CATALOGUE.items[103].title,'Assurance value');
  assert.ok(CATALOGUE.items.every(x=>x.lifecycle==='CANDIDATE_PROMPT'&&x.prompt.length>20));
  const duplicate=structuredClone(CATALOGUE);duplicate.items[1].id=1;
  assert.throws(()=>validateCatalogue(duplicate),/CATALOGUE_IDS/);

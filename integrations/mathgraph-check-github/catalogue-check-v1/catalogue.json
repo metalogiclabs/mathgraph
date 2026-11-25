@@ -1,11 +1,13 @@
 {
   "schema": "mathgraph.failure-catalogue.v1",
-  "revision": "2026-11-22-r2",
+  "revision": "2026-11-26-r4",
   "source": {
-    "url": "https://chatgpt.com/library?file_id=libfile_fde3_f-d8e002a479d88191a73ad3fd557ec93c_14752ef8670c819190e14bcb5a7d703e&account_id=personal",
-    "filename": "MathGraph_Failure_Catalogue_104_2026-11-22.md",
-    "version": "0",
-    "sha256": "af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe"
+    "kind": "EDITORIAL_RESEARCH_CATALOGUE",
+    "project": "MathGraph",
+    "path": "integrations/mathgraph-check-github/catalogue-check-v1/catalogue.json",
+    "origin": "Editorial candidate prompts developed during MathGraph assurance research with AI assistance. This file contains the complete public catalogue; it is not an established literature-derived taxonomy.",
+    "executable_mapping": "catalogue.mjs",
+    "status": "CANDIDATE_PROMPTS"
   },
   "boundary": "104 candidate search prompts. Numbering and mappings do not establish independent mechanisms, witnessed defects, executable coverage or exhaustiveness.",
   "items": [
@@ -1158,7 +1160,7 @@
     },
     {
       "id": 104,
-      "title": "Value",
+      "title": "Assurance value",
       "prompt": "Additional assurance work fails to improve the independently specified decision outcome or its fully measured cost.",
       "group": "IX — Added explicit candidates",
       "questions": [

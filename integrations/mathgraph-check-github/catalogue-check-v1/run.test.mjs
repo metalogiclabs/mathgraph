@@ -71,7 +71,7 @@ test('all retained profiles run despite a failure or throw; commits freeze once'
   await assert.rejects(runCatalogue({repo,base:rev,head:rev,out},{runners}),/OUTPUT_ALREADY_EXISTS/);
   called.length=0;
   const partial=await runCatalogue({repo,base:rev,head:rev,out:join(root,'partial'),profiles:[PROFILES[2].id],timeout:120},{runners});
-  assert.equal(called.length,1);assert.equal(partial.result.profile_counts.not_run,3);
+  assert.equal(called.length,1);assert.equal(partial.result.profile_counts.not_run,PROFILES.length-1);
   assert.equal(partial.result.status,'INCOMPLETE');assert.equal(partial.exit_code,2);
   assert.ok(partial.result.coverage.items.some(x=>x.status==='NOT_RUN'));
  }finally{await rm(root,{recursive:true,force:true});}
@@ -79,7 +79,7 @@ test('all retained profiles run despite a failure or throw; commits freeze once'
 
 test('argument errors are explicit and cannot quietly narrow the method set',()=>{
  const common=['--repo','repo','--base','A','--head','B','--out','out'];
- assert.equal(parseArgs(common).profiles.length,4);
+ assert.equal(parseArgs(common).profiles.length,5);
  assert.throws(()=>parseArgs([...common,'--profiles','invented']),/UNSUPPORTED_PROFILE/);
  assert.throws(()=>parseArgs([...common,'--profiles',PROFILES[0].id+','+PROFILES[0].id]),/DUPLICATE_PROFILE/);
  assert.throws(()=>parseArgs([...common,'--timeout-seconds','NaN']),/INVALID_TIMEOUT/);

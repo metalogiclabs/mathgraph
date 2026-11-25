@@ -62,7 +62,7 @@ class QualificationTests(unittest.TestCase):
         result={'coverage':coverage,'profile_counts':{'agreement':4,'discrepancy':0,'unknown':0,'not_run':0}}
         with self.assertRaisesRegex(RuntimeError,'PROFILE_COUNTS'):
             Q.validate_coverage(result,(Q.ORIGINAL_MISMATCHES,Q.PARTIAL_MISMATCHES))
-        result['profile_counts']={'agreement':3,'discrepancy':1,'unknown':0,'not_run':0}
+        result['profile_counts']={'agreement':3,'discrepancy':2,'unknown':0,'not_run':0}
         with self.assertRaisesRegex(RuntimeError,'CATALOGUE_ROW_OUTCOME|CATALOGUE_PROFILE_MAPPING'):
             Q.validate_coverage(result,(Q.ORIGINAL_MISMATCHES,Q.PARTIAL_MISMATCHES))
 

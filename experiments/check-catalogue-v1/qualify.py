@@ -1,4 +1,4 @@
-"""Frozen four-profile replay, partial repair, withdrawal and 104-row accounting.
+"""Frozen five-profile replay, partial repair, withdrawal and 104-row accounting.
 
 Synthetic Git children change no subject checkout, index or branch. The candidate
 is an experiment, not an upstream change or a whole-repository qualification.
@@ -20,6 +20,9 @@ VERIFIER_PATHS=('integrations/mathgraph-check-github','experiments/check-catalog
                 '.github/workflows/check-retained-report-v1.yml')
 REPORT_PATH='Tests/SuiteRunner/Reports.lean'
 MAIN_PATH='Tests/SuiteRunner/Main.lean'
+CAPSTONE_PATH='L4YAML/CapstoneAttr.lean'
+AXIOM_REPAIR='4b84e402ba48e2396dbbf68e452334e49b44c6c8'
+AXIOM_REPAIR_SHA='8ec732423ed9a7db9997de9aeb18d3661154ab14fc396301bf596cd3bf7fbc59'
 ORIGINAL='14eb6dbab845d2ac61f171a9ed61906d3f9ffb2f'
 OUTCOME_REPAIR='c06ec22e49c139a47a1ef08c96eb6726bb2b32ee'
 OUTCOME_REPAIR_TREE='a1d36507b49c60f6734f3450de1e6efe04e9185d'
@@ -30,6 +33,7 @@ OLD_CONDITION='else if name == "failure" && isStart && cur.isSome then failed :=
 NEW_CONDITION='else if (name == "failure" || name == "error") && isStart && cur.isSome then failed := true'
 XML='junit-report-integrity-v1'; STATUS='junit-status-preservation-v1'
 PER_CASE='suite-per-case-agreement-v1'; REFUSAL='suite-refusal-integrity-v1'
+AXIOM='capstone-axiom-admission-v1'
 PROFILE_CASE_IDS={
  XML:('prefix','suffix','duplicate','attribute_entity','content_entity','closing_content',
       'empty','one','failure','skip','comment_cdata','entities','truncated','mismatch','two_roots',
@@ -41,16 +45,17 @@ PROFILE_CASE_IDS={
  REFUSAL:('deliberate_rejection','ordinary_acceptance','unexpected_acceptance','unmarked_rejection',
           'exit_2','exit_127','exit_139','missing_executable','actual_crash','contradictory_rejection',
           'contradictory_acceptance','extra_stdout','stderr_only_marker','unmarked_acceptance',
-          'missing_newline','marked_abnormal_exit','timeout_exit','actual_timeout')}
+          'missing_newline','marked_abnormal_exit','timeout_exit','actual_timeout'),
+ AXIOM:('kernel','permitted','native','private')}
 ORIGINAL_MISMATCHES={XML:(),STATUS:('error_empty','error_text','error_then_pass','mixed_outcomes'),
  PER_CASE:('equal_totals_swapped_outcomes','single_preset_swapped_outcomes'),
  REFUSAL:('unmarked_rejection','exit_2','exit_127','exit_139','missing_executable','actual_crash',
           'contradictory_rejection','contradictory_acceptance','extra_stdout','stderr_only_marker',
-          'unmarked_acceptance','missing_newline','marked_abnormal_exit')}
-PARTIAL_MISMATCHES={**{p:() for p in PROFILE_CASE_IDS},STATUS:ORIGINAL_MISMATCHES[STATUS]}
+          'unmarked_acceptance','missing_newline','marked_abnormal_exit'),AXIOM:('private',)}
+PARTIAL_MISMATCHES={**{p:() for p in PROFILE_CASE_IDS},STATUS:ORIGINAL_MISMATCHES[STATUS],AXIOM:ORIGINAL_MISMATCHES[AXIOM]}
 NO_MISMATCHES={p:() for p in PROFILE_CASE_IDS}
 PROFILE_PROMPTS={XML:(28,29,39,59,77),STATUS:(28,39,59,77,78,100),
-                 PER_CASE:(28,35,59,61,66,67,70,73,77,90),REFUSAL:(28,55,59,60,77,78,100)}
+                 PER_CASE:(28,35,59,61,66,67,70,73,77,90),REFUSAL:(28,55,59,60,77,78,100),AXIOM:(43,)}
 
 
 def digest(data): return hashlib.sha256(data).hexdigest()
@@ -237,7 +242,7 @@ def main(argv=None):
     args=parser.parse_args(argv);out=Path(args.out).resolve();out.mkdir();repo=Path(args.repo).resolve()
     started=time.monotonic()
     summary={'engineering_qualification':'INCOMPLETE','runs':{},'boundary':
-             'Four retained finite profiles; 104 candidate prompts accounted for, not 104 qualified detectors.',
+             'Five retained finite profiles; 104 candidate prompts accounted for, not 104 qualified detectors.',
              'original':ORIGINAL,'outcome_candidate':OUTCOME_REPAIR,'human_trial':'NOT_RUN','comparative_value':'NOT_RUN'}
     def persist():
         summary['wall_seconds']=time.monotonic()-started;write_json(out/'summary.json',summary)
@@ -248,9 +253,15 @@ def main(argv=None):
         require(git(repo,'rev-list','--parents','-n','1',OUTCOME_REPAIR)==OUTCOME_REPAIR+' '+ORIGINAL,'OUTCOME_PARENT_MISMATCH')
         require(git(repo,'rev-parse',OUTCOME_REPAIR+':L4YAML')==PRODUCTION_SUBTREE,'PRODUCTION_SUBTREE_MISMATCH')
         combined=prepare_status_child(repo,OUTCOME_REPAIR,out);summary['combined_candidate']=combined
-        fixed=combined['commit']
-        require(git(repo,'rev-parse',fixed+':L4YAML')==PRODUCTION_SUBTREE,'COMBINED_CHANGED_PRODUCTION_SUBTREE')
-        absent=make_child(repo,fixed,{REPORT_PATH:None,MAIN_PATH:None},'Synthetic unavailable-source control\n')
+        report_fixed=combined['commit']
+        require(git(repo,'rev-parse',report_fixed+':L4YAML')==PRODUCTION_SUBTREE,'COMBINED_CHANGED_PRODUCTION_SUBTREE')
+        capstone=git(repo,'show',AXIOM_REPAIR+':'+CAPSTONE_PATH,binary=True)
+        require(digest(capstone)==AXIOM_REPAIR_SHA,'CAPSTONE_REPAIR_SOURCE_CHANGED')
+        combined_axiom=make_child(repo,report_fixed,{CAPSTONE_PATH:capstone},'Add pinned capstone admission repair\n')
+        summary['combined_axiom_candidate']=combined_axiom
+        summary['capstone_repair_source']={'commit':AXIOM_REPAIR,'path':CAPSTONE_PATH,'sha256':AXIOM_REPAIR_SHA}
+        fixed=combined_axiom['commit']
+        absent=make_child(repo,fixed,{REPORT_PATH:None,MAIN_PATH:None,CAPSTONE_PATH:None},'Synthetic unavailable-source control\n')
         summary['unavailable_source']=absent;persist()
         campaigns=(('partial-repair',ORIGINAL,OUTCOME_REPAIR,(ORIGINAL_MISMATCHES,PARTIAL_MISMATCHES)),
                    ('combined-repair',ORIGINAL,fixed,(ORIGINAL_MISMATCHES,NO_MISMATCHES)),

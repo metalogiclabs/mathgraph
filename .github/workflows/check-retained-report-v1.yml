@@ -1,7 +1,7 @@
 name: Retained report check - native source reuse
 on:
   push:
-    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122, feat/check-catalogue-104-20261122]
+    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122, feat/check-catalogue-104-20261122, experiment/check-axiom-admission-v1]
   pull_request:
     paths:
       - integrations/mathgraph-check-github/pr-pilot-v1/**
@@ -57,7 +57,7 @@ jobs:
           git -C subject remote add origin https://github.com/nasa-jpl/L4YAML.git
           git -C subject fetch --depth 1 origin 3e855548afa1c70bcc2aa77f7b86587de5658743 14eb6dbab845d2ac61f171a9ed61906d3f9ffb2f 122064d0c853be8d6c2f4cd255c6fcd67acc4ae8
           git -C subject remote add repair https://github.com/metalogiclabs/L4YAML.git
-          git -C subject fetch --depth 2 repair c06ec22e49c139a47a1ef08c96eb6726bb2b32ee
+          git -C subject fetch --depth 2 repair c06ec22e49c139a47a1ef08c96eb6726bb2b32ee 4b84e402ba48e2396dbbf68e452334e49b44c6c8
       - name: Frozen method on later source, reverse, unchanged and unsupported controls
         run: python3 experiments/check-retained-report-v1/qualify.py --repo subject --out qualification --lean "$MATHGRAPH_LEAN_BIN"
       - name: Frozen status method on original, local candidate, withdrawal and retained envelope controls
