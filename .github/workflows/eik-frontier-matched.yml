@@ -1,0 +1,85 @@
+name: EIK matched live-champion gap
+on:
+  push:
+    branches: [research/eik-live-frontier-20261125]
+    paths: ['.github/workflows/eik-frontier-matched.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  matched:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-narrow2-selected
+          run-id: 45566932685
+          github-token: ${{ github.token }}
+          path: candidate
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-live-frontier-read-only
+          run-id: 45569614249
+          github-token: ${{ github.token }}
+          path: live
+      - name: Measure the unchanged qualified source on the latest champion comparison seed
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp candidate/candidate.c kit/candidate.c
+          cd kit
+          echo '75faa8078e1c4982f1ce3430677114fc8991d292373aa266e2148d8a6351dc93  candidate.c' | sha256sum -c -
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          python -m eik measure candidate.c --seed 1284956104 --out ../evidence/measure.json
+      - name: Require exact live input digest and evaluator identity before comparing
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path("evidence")
+          measured=json.loads((root/"measure.json").read_text())
+          report=json.loads(pathlib.Path("live/report-52.json").read_text())
+          boards=json.loads(pathlib.Path("live/boards.json").read_text())
+          assert measured["sha256"]=="75faa8078e1c4982f1ce3430677114fc8991d292373aa266e2148d8a6351dc93"
+          assert measured["seed"]==1284956104 and measured["verdict"]=="passed"
+          live_inputs={next(j["compare"]["inputs_sha256"] for j in e["job_results"] if j["kind"]=="compare") for e in report["evaluations"]}
+          assert live_inputs=={measured["inputs_sha256"]},(live_inputs,measured["inputs_sha256"])
+          identities={e["identity"] for b in boards["boards"] for e in b["environments"]}
+          assert identities=={measured["fingerprint"]["measurement"]}
+          ref={}
+          for board in ("rv32im","thumbv6m","overall"):
+              e=next(e for e in report["evaluations"] if e["board"]==board)
+              lb=json.loads(pathlib.Path("live/leaderboard-"+board+".json").read_text())
+              champion=lb["reference"]["submission"]
+              if champion==report["submission"]["id"]:
+                  score=e["decision"]["entry_S"]
+                  source=report["submission"]["source_sha256"]
+              else:
+                  score=e["decision"]["champion_S"]
+                  source=e["decision"]["champion_sha256"]
+              assert source==lb["reference"]["source_sha256"]
+              m=measured["scores"][board]["S"]
+              threshold=0.97*score
+              ref[board]={"champion_submission":champion,"champion_sha256":source,"champion_S":score,"candidate_S":m,"takeover_threshold":threshold,"ratio":m/score,"candidate_within_bar":m<=threshold,"required_candidate_reduction":max(0,1-threshold/m)}
+          decision={"status":"WARRANTED_MATCHED_INPUT_COMPARISON","qualification_run":45566932685,"query_run":45569614249,"candidate_sha256":measured["sha256"],"seed":measured["seed"],"inputs_sha256":measured["inputs_sha256"],"measurement_identity":measured["fingerprint"]["measurement"],"boards":ref,"registration_snapshot":json.loads(pathlib.Path("live/registration-cost.json").read_text()),"entry_submitted":False,"payment_made":False}
+          (root/"matched-summary.json").write_text(json.dumps(decision,indent=2))
+          # The archived registration snapshot already contains the complete RPC proof.
+          brief={k:v for k,v in decision.items() if k!="registration_snapshot"}
+          brief["registration_snapshot"]={k:v for k,v in decision["registration_snapshot"].items() if k not in ("runtime","read_proof")}
+          print(json.dumps(brief,indent=2))
+          files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          (root/"SHA256SUMS.json").write_text(json.dumps(files,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-frontier-matched
+          path: evidence/
+          if-no-files-found: error
