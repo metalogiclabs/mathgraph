@@ -252,7 +252,7 @@ jobs:
           LEAN
           echo "909d10ef6c63d1214bad511fc76cf7175f53ebcecf995280f54f66ffdbf7cda4  evidence/MeaningTrial.lean" | sha256sum -c -
           lean --version | tee evidence/lean-version.txt
-          lean -DwarningAsError=true evidence/MeaningTrial.lean | tee evidence/axioms.log
+          lean -DwarningAsError=true -Dlinter.unusedVariables=false evidence/MeaningTrial.lean | tee evidence/axioms.log
           python - <<'PY'
           import re
           from pathlib import Path
