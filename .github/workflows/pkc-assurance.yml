@@ -1,0 +1,43 @@
+name: PKC assurance consolidation and regression
+on:
+  push:
+    branches: ['experiment/pkc-assurance-record-20261125']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone https://github.com/nasa-jpl/PropertyKindCalculus.git pkc
+          git -C pkc checkout --detach 97153d3fad3cb8e5e018d2df5f7aeb4a406ff7e4
+          cp Probe.lean Warrant.lean pkc/
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - working-directory: pkc
+        run: |
+          set -eo pipefail
+          lake exe cache get || true
+          lake build Tests Uncertainty UncertaintyRigor UncertaintyExamples Requirements 2>&1 | tee baseline-build.txt
+          git -C .lake/packages/TorchLean rev-parse HEAD | tee dependency.txt
+          test "$(cat dependency.txt)" = 65aec783e51f7961660971651060d03fdffebf05
+          lake env lean --run Probe.lean | tee before.txt
+          python3 ../repair.py
+          git diff > repair.diff
+          lake build Tests Uncertainty UncertaintyRigor UncertaintyExamples Requirements 2>&1 | tee repaired-build.txt
+          lake env lean --run Probe.lean | tee after.txt
+          python3 ../verify.py
+          lake env lean Warrant.lean | tee warrant.txt
+          sha256sum Probe.lean Warrant.lean before.txt after.txt baseline-build.txt repaired-build.txt dependency.txt repair.diff warrant.txt > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pkc-consolidated-qualification
+          path: |
+            pkc/*.txt
+            pkc/Probe.lean
+            pkc/Warrant.lean
+            pkc/repair.diff
+            pkc/SHA256SUMS
