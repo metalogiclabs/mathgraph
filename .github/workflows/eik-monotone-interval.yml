@@ -1,0 +1,246 @@
+name: EIK exact monotone interval evaluation
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-monotone-interval.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, both13, both14, both15, both16, both17, both18, both19]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Pinned baseline and inverse-function interval generation
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp ../prior/candidate.c baseline.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  baseline.c' | sha256sum -c -
+          if [ "$VARIANT" = control ]; then
+            cp baseline.c candidate.c
+          else
+            pip install mpmath==1.3.0
+            python ../research/eik/interval.py baseline.c candidate.c "${VARIANT#both}" | tee evidence/intervals.json
+          fi
+          python - <<'PY'
+          import os,pathlib,hashlib
+          pins={
+            'control':'3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4',
+            'both13':'73f6705c1c36050bf5f00f6c89557bc66968552ff309fa8074bb62398269d6b7',
+            'both14':'6589cf8666edd2234aaad944be22ce7c08c276a81c74367f41e39b9c851b8004',
+            'both15':'c8ce39e94eaef99f8bd5c5c1fa2a30baea78476db43e09cdfd16f9faa11cc091',
+            'both16':'4de84752f92e1936e70ea8ec08978f40ad4e4c7826ac00e9876e68b2cf6b4273',
+            'both17':'8d368afab00554189c6287642f0d7a19c15ff8fee3539cb3560f74522c52ec1b',
+            'both18':'1b0976590e62327bbf76dad6a5de6203f474b6e0a142d07d717e6312f98a7a16',
+            'both19':'944336a85e7dc09e28790cb4a8d9643101aedaba252bf4fbf7a3b6d73058534a'}
+          actual=hashlib.sha256(pathlib.Path('candidate.c').read_bytes()).hexdigest()
+          assert actual==pins[os.environ['VARIANT']],(actual,pins[os.environ['VARIANT']])
+          PY
+          cp candidate.c evidence/
+          sha256sum baseline.c candidate.c > evidence/source.sha256
+          git rev-parse HEAD > evidence/evaluator.sha
+      - name: Install unchanged official evaluator
+        working-directory: kit
+        run: |
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+      - name: Official static gate and discovery measurement
+        working-directory: kit
+        run: |
+          set -o pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          cat evidence/measure.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-interval-${{ matrix.variant }}
+          path: kit/evidence/
+  select:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      qualify: ${{ steps.select.outputs.qualify }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-interval-*
+          path: runs
+      - name: Select measured improvements without composing overlapping interval maps
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          python - <<'PY'
+          import sys,json,pathlib,hashlib
+          sys.path.insert(0,'../research/eik')
+          root=pathlib.Path('../runs')
+          reports={}
+          failures={}
+          for v in ['control','both13','both14','both15','both16','both17','both18','both19']:
+              f=root/('eik-interval-'+v)/'measure.json'
+              if not f.exists():
+                  failures[v]='no completed report';continue
+              r=json.loads(f.read_text())
+              if r.get('verdict')!='passed':
+                  failures[v]=r.get('reasons',[]);continue
+              assert r['sha256']==hashlib.sha256((f.parent/'candidate.c').read_bytes()).hexdigest()
+              reports[v]=r
+          c=reports['control']
+          for v,r in reports.items():
+              assert r['inputs_sha256']==c['inputs_sha256']
+              assert r['seed']==c['seed']
+              assert r['fingerprint']['measurement']==c['fingerprint']['measurement']
+          score=lambda v:reports[v]['scores']['rv32im']['S']
+          base=root/'eik-interval-control'/'candidate.c'
+          assert hashlib.sha256(base.read_bytes()).hexdigest()=='3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4'
+          pathlib.Path('control.c').write_bytes(base.read_bytes())
+          best=min(reports,key=score)
+          pathlib.Path('best.c').write_bytes((root/('eik-interval-'+best)/'candidate.c').read_bytes())
+          pathlib.Path('evidence/best.json').write_text(json.dumps(reports[best],indent=2))
+          winners=[v for v in reports if v!='control' and score(v)<score('control')]
+          combo=[]
+          summary={'scores':{v:score(v) for v in reports},'best':best,'failures':failures,'independent_improvements':winners,'combination':combo}
+          print(json.dumps(summary,indent=2))
+          pathlib.Path('evidence/selection.json').write_text(json.dumps(summary,indent=2))
+          PY
+
+      - name: Choose best correct discovery candidate; fresh paired test
+        id: select
+        working-directory: kit
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path('evidence')
+          a=json.loads((p/'best.json').read_text())
+          b=json.loads((p/'combined.json').read_text()) if (p/'combined.json').exists() else {}
+          source=pathlib.Path('best.c')
+          if b.get('verdict')=='passed':
+              assert b['sha256']==hashlib.sha256(pathlib.Path('combined.c').read_bytes()).hexdigest()
+              assert b['inputs_sha256']==a['inputs_sha256']
+              assert b['fingerprint']['measurement']==a['fingerprint']['measurement']
+              if b['scores']['rv32im']['S']<a['scores']['rv32im']['S']:
+                  source=pathlib.Path('combined.c');a=b
+          (p/'candidate.c').write_bytes(source.read_bytes())
+          (p/'discovery.json').write_text(json.dumps(a,indent=2))
+          PY
+          python -m eik measure evidence/candidate.c --seed 20261130 --out evidence/heldout.json
+          python -m eik measure control.c --seed 20261130 --out evidence/control-heldout.json
+          python - <<'PY'
+          import json,pathlib,os,hashlib
+          p=pathlib.Path('evidence')
+          a,b,c=[json.loads((p/f).read_text()) for f in ['discovery.json','heldout.json','control-heldout.json']]
+          assert a['sha256']==b['sha256']==hashlib.sha256((p/'candidate.c').read_bytes()).hexdigest()
+          assert b['inputs_sha256']==c['inputs_sha256'] and b['fingerprint']['measurement']==c['fingerprint']['measurement']
+          x,y,z=[r['scores']['rv32im']['S'] for r in [a,b,c]]
+          # This is a historical screening threshold only: the live incumbent
+          # is unavailable; never interpret as a guaranteed takeover.
+          qualify=b['verdict']=='passed' and y<z and max(x,y)<=27.354
+          print('discovery',x,'heldout',y,'heldout control',z,'exhaustive gate',qualify)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('qualify='+str(qualify).lower()+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-interval-selected
+          path: kit/evidence/
+  qualify:
+    needs: select
+    if: needs.select.outputs.qualify == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [sigmoid,tanh,exp]
+        target: [host,rv32im,thumbv6m,thumbv7em]
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-interval-selected
+          path: selected
+      - name: Full native or target correctness
+        env:
+          FN: ${{ matrix.function }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp ../selected/candidate.c .
+          mkdir evidence
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          if [ "$TARGET" = host ]; then
+            python -m eik fullcheck candidate.c --function "$FN" --out evidence/report.json
+          else
+            sudo apt-get update
+            sudo apt-get install -y qemu-user
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out evidence/report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-interval-full-${{ matrix.function }}-${{ matrix.target }}
+          path: kit/evidence/
+  reconcile:
+    needs: qualify
+    if: needs.qualify.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-interval-full-*
+          path: full
+      - run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          pip install --require-hashes -r requirements.txt
+          python -m eik merge ../full/*/report.json --require-targets rv32im,thumbv6m,thumbv7em --out final.json
+          cat final.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-interval-full-qualification
+          path: kit/final.json
