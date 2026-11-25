@@ -1,0 +1,103 @@
+name: EIK published RISC-V frontier recovery
+on:
+  push:
+    branches: [research/eik-rv-frontier-20261125]
+    paths: ['.github/workflows/eik-rv-public.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Recover published former champions, official reports and retained source
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir -p evidence/sources evidence/reports
+          cp prior/candidate.c evidence/sources/rrr.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  evidence/sources/rrr.c' | sha256sum -c -
+          pip install --require-hashes -r kit/requirements.txt
+          pip install -r kit/requirements-miner.txt
+          python - <<'PY'
+          import requests,json,pathlib,hashlib
+          base="https://conjectures.io/v1/competitions/exact-integer-kernels"
+          root=pathlib.Path("evidence")
+          inventory={}
+          for i in (47,45,40):
+              report=requests.get(f"{base}/submissions/{i}/report",timeout=45)
+              report.raise_for_status()
+              d=report.json()
+              (root/f"reports/{i}.json").write_text(json.dumps(d,indent=2))
+              available=d["submission"]["source_available"]
+              rec={"published_source_available":available,"official_sha256":d["submission"]["source_sha256"]}
+              if available:
+                  source=requests.get(f"{base}/submissions/{i}/source",timeout=45)
+                  source.raise_for_status()
+                  b=source.content
+                  h=hashlib.sha256(b).hexdigest()
+                  assert h==rec["official_sha256"]
+                  assert all(("eik_"+f).encode() in b for f in ("sigmoid","tanh","exp")) and len(b)<=262144
+                  (root/f"sources/entry-{i}.c").write_bytes(b)
+                  rec.update(download_sha256=h,source_bytes=len(b))
+              inventory[str(i)]=rec
+          for cmd in (["boards"],["leaderboard","--board","rv32im"],["report","52"]):
+              import subprocess,sys
+              name="-".join(cmd)
+              r=subprocess.run([sys.executable,"miner/submit.py",*cmd],cwd="kit",capture_output=True,text=True,check=True)
+              data=json.loads(r.stdout)
+              (root/f"{name}.json").write_text(json.dumps(data,indent=2))
+          (root/"inventory.json").write_text(json.dumps(inventory,indent=2))
+          print(json.dumps(inventory,indent=2))
+          PY
+      - name: Compare per-function instruction cost on recorded and held-out inputs
+        run: |
+          set -euo pipefail
+          cd kit
+          python -m eik setup
+          for file in ../evidence/sources/*.c; do
+            name=$(basename "$file" .c)
+            python -m eik measure "$file" --seed 1284956104 --out "../evidence/$name-matched.json"
+            python -m eik measure "$file" --seed 20261219 --out "../evidence/$name-heldout.json"
+          done
+          python - <<'PY'
+          import pathlib,json
+          p=pathlib.Path("../evidence")
+          rows={}
+          for f in sorted(p.glob("*-matched.json")):
+              a=json.loads(f.read_text());b=json.loads(f.with_name(f.name.replace("-matched","-heldout")).read_text())
+              assert a["verdict"]==b["verdict"]=="passed"
+              assert a["sha256"]==b["sha256"]
+              rows[f.name.removesuffix("-matched.json")]={"sha256":a["sha256"],"matched_S":a["scores"]["rv32im"]["S"],"heldout_S":b["scores"]["rv32im"]["S"],"matched_functions":a["scores"]["rv32im"]["functions"],"heldout_functions":b["scores"]["rv32im"]["functions"],"bytes":a["scores"]["rv32im"]["bytes"],"inputs_sha256":a["inputs_sha256"],"measurement_identity":a["fingerprint"]["measurement"]}
+          assert len({r["inputs_sha256"] for r in rows.values()})==1
+          assert len({r["measurement_identity"] for r in rows.values()})==1
+          (p/"cost-comparison.json").write_text(json.dumps(rows,indent=2))
+          print(json.dumps(rows,indent=2))
+          PY
+      - name: Seal evidence
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path("evidence")
+          files={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.rglob("*")) if f.is_file()}
+          (p/"SHA256SUMS.json").write_text(json.dumps(files,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-rv-public-recovery
+          path: evidence/
+          if-no-files-found: error
