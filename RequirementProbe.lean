@@ -4,7 +4,8 @@ open Lean PropertyKindCalculus.Requirements
 open Lean Elab Command in
 elab "#inspect_requirement" id:str : command => do
   let env ← getEnv
-  logInfo m!"{id.getString}: {requirementStatus env id}"
+  let key := id.getString
+  logInfo m!"{key}: {(requirementStatus env key).label}"
 
 #inspect_requirement "R15"
 
