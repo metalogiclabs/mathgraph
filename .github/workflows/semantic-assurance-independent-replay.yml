@@ -1,0 +1,94 @@
+name: Independent Lean semantic assurance replay
+on:
+  push:
+    branches: [research/semantic-assurance-finite-trial-20261126]
+    paths: ['.github/workflows/semantic-assurance-independent-replay.yml']
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 83b2ed1979c9023e9dfa246335f0e507f0c0fe25
+          persist-credentials: false
+      - name: Recover frozen fixture from qualified source
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/replay"
+          python - <<'PY'
+          import os,re
+          from pathlib import Path
+          out=Path(os.environ['RUNNER_TEMP'])/'replay'
+          s=Path('.github/workflows/semantic-assurance-finite-trial.yml').read_text()
+          body=s.split("          cat > evidence/MeaningTrial.lean <<'LEAN'\n",1)[1].split("\n          LEAN\n",1)[0]
+          lean='\n'.join(x[10:] if x.startswith(' '*10) else x for x in body.splitlines())+'\n'
+          (out/'MeaningTrial.lean').write_text(lean)
+          names=re.findall(r'^theorem (\w+)',lean,re.M)
+          assert len(names)==66 and len(set(names))==66
+          (out/'declarations.txt').write_text('\n'.join('MeaningTrial.'+n for n in names)+'\n')
+          PY
+          cd "$RUNNER_TEMP/replay"
+          echo "909d10ef6c63d1214bad511fc76cf7175f53ebcecf995280f54f66ffdbf7cda4  MeaningTrial.lean" | sha256sum -c -
+      - name: Install Lean and export exact declaration roster
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.36.0
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd "$RUNNER_TEMP/replay"
+          lean --version | tee lean-version.txt
+          lean -DwarningAsError=true -Dlinter.unusedVariables=false -o MeaningTrial.olean MeaningTrial.lean | tee native-axioms.log
+          test "$(grep -c 'does not depend on any axioms' native-axioms.log)" -eq 66
+          export LEAN_PATH="$PWD"
+          mapfile -t declarations < declarations.txt
+          "$(lean --print-prefix)/bin/leanexport" MeaningTrial -- "${declarations[@]}" > MeaningTrial.ndjson
+          test -s MeaningTrial.ndjson
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('MeaningTrial.ndjson')
+          rows=[json.loads(line) for line in p.open()]
+          # Require names to appear as either full strings or final name components.
+          strings=set()
+          def walk(v):
+              if isinstance(v,str): strings.add(v)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+              elif isinstance(v,dict):
+                  for x in v.values(): walk(x)
+          for row in rows: walk(row)
+          names=Path('declarations.txt').read_text().splitlines()
+          missing=[n for n in names if n not in strings and n.split('.')[-1] not in strings]
+          assert not missing, missing
+          print('All 66 roster names present in exported data; checker must accept the entire stream.')
+          PY
+          sha256sum MeaningTrial.lean MeaningTrial.ndjson declarations.txt native-axioms.log lean-version.txt > export.sha256
+      - name: Build exact independent verified checker
+        run: |
+          set -euo pipefail
+          C="$RUNNER_TEMP/con-leche"
+          git init "$C"
+          git -C "$C" remote add origin https://github.com/leanprover/con-leche.git
+          git -C "$C" fetch --depth 1 origin 600d3b583b769176e911b06d20ba16330c9a179b
+          git -C "$C" checkout --detach FETCH_HEAD
+          test "$(git -C "$C" rev-parse HEAD)" = 600d3b583b769176e911b06d20ba16330c9a179b
+          cd "$C"
+          lake build con-leche
+          git rev-parse HEAD > "$RUNNER_TEMP/replay/checker-commit.txt"
+          sha256sum .lake/build/bin/con-leche > "$RUNNER_TEMP/replay/checker-binary.sha256"
+      - name: Strict independent replay
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/replay"
+          sha256sum -c export.sha256
+          "$RUNNER_TEMP/con-leche/.lake/build/bin/con-leche" --verified --jobs=4 "$PWD/MeaningTrial.ndjson" 2>&1 | tee checker.log
+          echo "raw_exit=0" > verdict.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semantic-assurance-independent-replay
+          path: ${{ runner.temp }}/replay/
+          if-no-files-found: error
