@@ -9,6 +9,16 @@ import subprocess
 import time
 
 
+def check_analysis_report(raw):
+    objects = json.loads(raw)
+    errors = [o for o in objects if o.get('objectType') == 'log' and o.get('level') in ['error', 'fatal']]
+    if errors:
+        raise ValueError('NATIVE_BACKEND_ERROR_DESPITE_PROCESS_EXIT_STATUS')
+    properties = [o for o in objects if o.get('objectType') == 'property']
+    if not properties or any(o.get('answer', {}).get('value') != 'valid' for o in properties):
+        raise ValueError('NATIVE_PROPERTIES_NOT_ALL_VALID')
+
+
 def qualify(kind2, z3, out):
     logs = out / 'native-logs'
     logs.mkdir(exist_ok=True)
@@ -48,9 +58,11 @@ def qualify(kind2, z3, out):
                                  'nn_12B_with_contracts_PP', out / 'original_export.lus'])
     common = [kind2, '-json', '--smt_solver', 'Z3', '--z3_bin', z3,
               '--enable', 'BMC', '--enable', 'IND', '--timeout', '60']
-    run('clock-miter-proof', common + ['--lus_main', 'clock_miter', out / 'clock_miter.lus'])
-    run('monitor-proof-and-codegen', common + ['--lus_main', 'native_scalar_monitor', '--compile', 'true',
-                                             '--output_dir', out / 'rust-codegen', out / 'temporal_compile_projection.lus'])
+    clock_report = run('clock-miter-proof', common + ['--lus_main', 'clock_miter', out / 'clock_miter.lus'])
+    check_analysis_report(clock_report)
+    monitor_report = run('monitor-proof-and-codegen', common + ['--lus_main', 'native_scalar_monitor', '--compile', 'true',
+                                                               '--output_dir', out / 'rust-codegen', out / 'temporal_compile_projection.lus'])
+    check_analysis_report(monitor_report)
     manifests = list((out / 'rust-codegen').rglob('Cargo.toml'))
     assert len(manifests) == 1
     project = manifests[0].parent

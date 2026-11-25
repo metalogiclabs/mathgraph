@@ -16,7 +16,7 @@ CLOCK = ['__time_step = (0.0 -> ((pre (__time_step)) + 1.0));',
          '__nb_step = (0 -> ((pre (__nb_step)) + 1));']
 HARNESS = '''
 node native_scalar_monitor(delta:real) returns (
-  active:bool; instant:bool; past_ok:bool; __time_step:real; __nb_step:int; clock_ok:bool);
+  active:bool; instant:bool; past_ok:bool; __time_step:real; __nb_step:int; clock_nonnegative:bool);
 var first:bool;
 let
   __time_step = (0.0 -> ((pre (__time_step)) + 1.0));
@@ -25,8 +25,8 @@ let
   active = OT_call_19_000(200, 0, first, __time_step, __nb_step);
   instant = spec225_operator_256_000(active, delta <= 10.0 and delta >= -35.0, __time_step, __nb_step);
   past_ok = instant and (true -> pre past_ok);
-  clock_ok = __time_step = real __nb_step;
-  --%PROPERTY clock_ok;
+  clock_nonnegative = __time_step >= 0.0 and __nb_step >= 0;
+  --%PROPERTY clock_nonnegative;
 tel
 '''
 

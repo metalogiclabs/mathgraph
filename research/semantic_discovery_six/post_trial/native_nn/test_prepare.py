@@ -2,10 +2,14 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import json
 
 spec = importlib.util.spec_from_file_location('nn_native_prepare', Path(__file__).with_name('prepare.py'))
 prepare = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare)
+host_spec = importlib.util.spec_from_file_location('nn_host_codegen', Path(__file__).with_name('host_codegen.py'))
+host = importlib.util.module_from_spec(host_spec)
+host_spec.loader.exec_module(host)
 
 
 class ProjectionTests(unittest.TestCase):
@@ -26,6 +30,16 @@ class ProjectionTests(unittest.TestCase):
         # observable outputs rather than proof-only annotations.
         self.assertIn('active:bool; instant:bool; past_ok:bool;', prepare.HARNESS)
         self.assertIn('past_ok = instant and (true -> pre past_ok);', prepare.HARNESS)
+
+    def test_a_valid_proof_does_not_admit_a_failed_native_backend(self):
+        report = [{'objectType': 'property', 'answer': {'value': 'valid'}},
+                  {'objectType': 'log', 'level': 'error', 'value': 'Failure: unsupported symbol to_real'}]
+        with self.assertRaisesRegex(ValueError, 'NATIVE_BACKEND_ERROR'):
+            host.check_analysis_report(json.dumps(report))
+
+    def test_unknown_native_result_is_not_promoted(self):
+        with self.assertRaisesRegex(ValueError, 'NATIVE_PROPERTIES_NOT_ALL_VALID'):
+            host.check_analysis_report(json.dumps([{'objectType': 'property', 'answer': {'value': 'unknown'}}]))
 
 
 if __name__ == '__main__':

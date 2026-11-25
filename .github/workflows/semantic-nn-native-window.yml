@@ -61,4 +61,5 @@ jobs:
           name: semantic-nn-native-window
           path: ${{ runner.temp }}/nn-native-evidence/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 90
