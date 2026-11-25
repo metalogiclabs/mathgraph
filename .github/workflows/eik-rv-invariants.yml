@@ -1,0 +1,159 @@
+name: EIK exact invariant elimination
+on:
+  push:
+    branches: [research/eik-rv-frontier-20261125]
+    paths: ['.github/workflows/eik-rv-invariants.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control,rrr-tanh-nonzero,portable47-nonzero,portable47-even,portable47-clean,fused-clean,fused-clean-tanh]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rv-public-recovery
+          run-id: 45571639026
+          github-token: ${{ github.token }}
+          path: public
+      - name: Reproduce source and differential checks
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir rv-invariant-evidence
+          if [ "$VARIANT" = control ]; then
+            cp prior/candidate.c candidate.c
+          else
+            python research/eik/rv_invariants.py prior/candidate.c public/sources/entry-47.c candidate.c "$VARIANT" | tee rv-invariant-evidence/invariant-certificate.json
+          fi
+          cp candidate.c rv-invariant-evidence/
+          sha256sum candidate.c > rv-invariant-evidence/source.sha256
+          gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h prior/candidate.c -o baseline.so
+          gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h candidate.c -o candidate.so
+          gcc -O2 research/eik/rv_diff.c -ldl -o diff
+          ./diff "$PWD/baseline.so" "$PWD/candidate.so" | tee rv-invariant-evidence/native-differential.txt
+          pip install --require-hashes -r kit/requirements.txt
+      - name: Official gate and two matched-seed measurements
+        run: |
+          set -euo pipefail
+          cd kit
+          python -m eik setup
+          python -m eik check ../candidate.c 2>&1 | tee ../rv-invariant-evidence/check.log
+          python -m eik measure ../candidate.c --seed 1284956104 --out ../rv-invariant-evidence/matched.json
+          python -m eik measure ../candidate.c --seed 20261219 --out ../rv-invariant-evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-rv-invariants-${{ matrix.variant }}
+          path: rv-invariant-evidence/
+          if-no-files-found: error
+  reconcile:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    outputs:
+      qualify: ${{ steps.decision.outputs.qualify }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-rv-invariants-*
+          path: runs
+      - name: Compare independent variants and preserve failures
+        id: decision
+        run: |
+          python - <<'PY'
+          import pathlib,json,hashlib,os
+          results={};admitted={}
+          for p in sorted(pathlib.Path("runs").iterdir()):
+              v=p.name.removeprefix("eik-rv-invariants-")
+              try:
+                  a,b=[json.loads((p/n).read_text()) for n in ("matched.json","heldout.json")]
+                  h=hashlib.sha256((p/"candidate.c").read_bytes()).hexdigest()
+                  assert a["sha256"]==b["sha256"]==h and a["verdict"]==b["verdict"]=="passed"
+                  results[v]={"sha256":h,"matched":a["scores"]["rv32im"]["S"],"heldout":b["scores"]["rv32im"]["S"],"bytes":a["scores"]["rv32im"]["bytes"]}
+                  admitted[v]=(a,b,p)
+              except Exception as e:results[v]={"not_admitted":repr(e)}
+          c=admitted["control"]
+          for v,(a,b,p) in admitted.items():
+              for i,r in enumerate((a,b)):
+                  assert r["inputs_sha256"]==c[i]["inputs_sha256"]
+                  assert r["fingerprint"]["measurement"]==c[i]["fingerprint"]["measurement"]
+          gain=lambda v:min(1-admitted[v][i]["scores"]["rv32im"]["S"]/c[i]["scores"]["rv32im"]["S"] for i in (0,1))
+          best=max(admitted,key=gain)
+          # Retain a consequential two-seed improvement; never claim an official takeover.
+          qualify=best!="control" and gain(best)>=0.005
+          p=pathlib.Path("selected");p.mkdir()
+          (p/"candidate.c").write_bytes((admitted[best][2]/"candidate.c").read_bytes())
+          decision={"status":"WARRANTED_PAIRED_MEASUREMENT_ONLY","results":results,"best":best,"minimum_gain":gain(best),"qualify":qualify,"matched_takeover_threshold_snapshot":27.338009176634163}
+          (p/"decision.json").write_text(json.dumps(decision,indent=2))
+          print(json.dumps(decision,indent=2))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write("qualify="+str(qualify).lower()+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-rv-invariants-selected
+          path: selected/
+  qualify:
+    needs: reconcile
+    if: needs.reconcile.outputs.qualify == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [sigmoid,tanh,exp]
+        target: [host,rv32im,thumbv6m,thumbv7em]
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rv-invariants-selected
+          path: selected
+      - name: Complete full-domain qualification without submission
+        env:
+          FN: ${{ matrix.function }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir rv-invariant-evidence
+          cp ../selected/candidate.c .
+          sha256sum candidate.c > rv-invariant-evidence/source.sha256
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          if [ "$TARGET" = host ]; then
+            python -m eik fullcheck candidate.c --function "$FN" --out rv-invariant-evidence/report.json
+          else
+            sudo apt-get update
+            sudo apt-get install -y qemu-user
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out rv-invariant-evidence/report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-rv-invariants-full-${{ matrix.function }}-${{ matrix.target }}
+          path: kit/rv-invariant-evidence/
