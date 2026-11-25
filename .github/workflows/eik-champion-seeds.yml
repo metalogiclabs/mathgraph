@@ -1,0 +1,90 @@
+name: EIK champion-seed comparison of retained candidates
+on:
+  push:
+    branches: [research/eik-live-board-readonly-20261125]
+    paths: ['.github/workflows/eik-champion-seeds.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: rrr
+            run: 45545248898
+            artifact: eik-rrr-control
+            sha: 3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4
+          - variant: ttt
+            run: 45535730893
+            artifact: eik-mix-ttt
+            sha: ed3ed54da2dcd31861bfcc7f6533d16ab5020318cfe4f4e96ef9bcce2baf11d3
+          - variant: joint
+            run: 45566932685
+            artifact: eik-narrow2-selected
+            sha: 75faa8078e1c4982f1ce3430677114fc8991d292373aa266e2148d8a6351dc93
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          run-id: ${{ matrix.run }}
+          github-token: ${{ github.token }}
+          path: prior
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-live-public-board-receipt
+          run-id: 45568711026
+          github-token: ${{ github.token }}
+          path: live
+      - name: Replay exact archived source on recorded champion seeds
+        env:
+          EXPECTED: ${{ matrix.sha }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp ../prior/candidate.c candidate.c
+          echo "$EXPECTED  candidate.c" | sha256sum -c -
+          mkdir evidence
+          cp candidate.c evidence/
+          git rev-parse HEAD > evidence/evaluator.sha
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          for seed in 2115442257 1284956104; do
+            python -m eik measure candidate.c --seed "$seed" --out "evidence/measure-$seed.json"
+          done
+          python - <<'PY'
+          import json,pathlib
+          local={s:json.loads(pathlib.Path(f"evidence/measure-{s}.json").read_text()) for s in (2115442257,1284956104)}
+          official=json.loads(pathlib.Path("../live/report-52.json").read_text())
+          out={}
+          for b in ("rv32im","thumbv6m","overall"):
+              ev=next(e for e in official["evaluations"] if e["board"]==b)
+              seed=ev["seed"]
+              cmp=next(j["compare"] for j in ev["job_results"] if "compare" in j)
+              challenger=cmp["boards"][b]
+              champion=challenger["entry_S"] if b=="rv32im" else challenger["champion_S"]
+              measured=local[seed]
+              assert measured["verdict"]=="passed"
+              lh=measured.get("inputs_sha256")
+              ch=cmp.get("inputs_sha256")
+              lm=measured.get("fingerprint",{}).get("measurement")
+              cm=cmp.get("fingerprint",{}).get("measurement")
+              out[b]={"seed":seed,"ours":measured["scores"][b]["S"],"reported_current_champion":champion,"threshold":0.97*champion,"ratio":measured["scores"][b]["S"]/champion,"local_inputs_sha256":lh,"official_inputs_sha256":ch,"input_match":bool(lh and lh==ch),"local_measurement_fingerprint":lm,"official_measurement_fingerprint":cm,"measurement_match":bool(lm and lm==cm),"compare_keys":sorted(cmp.keys())}
+          pathlib.Path("evidence/comparison.json").write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-champion-seed-${{ matrix.variant }}
+          path: kit/evidence/
