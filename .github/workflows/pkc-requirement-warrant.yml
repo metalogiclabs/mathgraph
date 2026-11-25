@@ -1,0 +1,34 @@
+name: PKC requirement warrant negative controls
+on:
+  push:
+    branches: ['experiment/pkc-requirement-warrant-20261125']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone https://github.com/nasa-jpl/PropertyKindCalculus.git pkc
+          git -C pkc checkout --detach 97153d3fad3cb8e5e018d2df5f7aeb4a406ff7e4
+          cp RequirementProbe.lean pkc/
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - working-directory: pkc
+        run: |
+          set -eo pipefail
+          lake build +PropertyKindCalculus.Requirements.Attributes
+          lake env lean RequirementProbe.lean | tee requirement.txt
+          grep -F 'R15: unaddressed' requirement.txt
+          grep -F 'R15: proved' requirement.txt
+          grep -F 'R14: proved' requirement.txt
+          sha256sum RequirementProbe.lean requirement.txt > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: requirement-warrant-evidence
+          path: |
+            pkc/RequirementProbe.lean
+            pkc/requirement.txt
+            pkc/SHA256SUMS
