@@ -1,0 +1,56 @@
+name: Real-source Ogma semantic assurance adapter
+on:
+  push:
+    branches: [research/semantic-assurance-ogma-native-20261126]
+    paths:
+      - research/semantic_assurance_ogma/**
+      - .github/workflows/semantic-assurance-ogma-native.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native_adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check adapter scope and existing warrant resolver
+        run: |
+          set -euo pipefail
+          python3 -m pip install pytest==9.2.0
+          python3 -m pytest tests/test_mathgraph_warrant_resolution_core.py research/semantic_assurance_ogma/test_replay.py -q
+      - name: Recover independently authored source and exact historical native artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          I="$RUNNER_TEMP/ogma-assurance/inputs"
+          mkdir -p "$I"
+          curl --fail --location --silent --show-error \
+            https://raw.githubusercontent.com/NASA-SW-VnV/fret/cf0f913cc15c41705e803593297e89cd6056b839/caseStudies/LiftPlusCruise/LPC_full_reqts_and_vars.json \
+            --output "$I/LPC_full_reqts_and_vars.json"
+          gh api repos/metalogiclabs/fret/actions/artifacts/14489079218/zip \
+            > "$I/fret_ogma_postcensus_native_44435948686.zip"
+          gh api repos/metalogiclabs/ogma/actions/artifacts/14491054038/zip \
+            > "$I/ogma_greater_boundary_fixed_44439625075.zip"
+      - name: Fresh native execution, certificate reexecution and admission controls
+        run: |
+          set -euo pipefail
+          python3 research/semantic_assurance_ogma/replay.py \
+            --inputs "$RUNNER_TEMP/ogma-assurance/inputs" \
+            --out "$RUNNER_TEMP/ogma-assurance/result"
+          cp research/semantic_assurance_ogma/protocol.* "$RUNNER_TEMP/ogma-assurance/"
+          git rev-parse HEAD > "$RUNNER_TEMP/ogma-assurance/source-commit.txt"
+          cd "$RUNNER_TEMP/ogma-assurance"
+          find . -type f ! -name MANIFEST.sha256 -print0 | sort -z | xargs -0 sha256sum > MANIFEST.sha256
+      - name: Preserve qualified native evidence and failed controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-assurance-ogma-native
+          path: ${{ runner.temp }}/ogma-assurance/
+          if-no-files-found: error
+          retention-days: 90
