@@ -1,0 +1,58 @@
+name: EIK live board read-only receipt
+on:
+  push:
+    branches: [research/eik-live-board-readonly-20261125]
+    paths: ['.github/workflows/eik-live-board-readonly.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  boards:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Query public endpoints using pinned miner client
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          date -u +%FT%TZ > evidence/utc.txt
+          git clone -q https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout -q --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          git -C kit rev-parse HEAD > evidence/client-pin.txt
+          python3 -c 'import requests' || python3 -m pip install --user requests
+          for board in boards overall rv32im thumbv6m; do
+            if [ "$board" = boards ]; then
+              timeout 75s python3 kit/miner/submit.py boards > evidence/boards.json 2> evidence/boards.stderr
+            else
+              timeout 75s python3 kit/miner/submit.py leaderboard --board "$board" > "evidence/$board.json" 2> "evidence/$board.stderr"
+            fi
+            printf '%s %s\n' "$board" "$?" >> evidence/status.txt
+          done
+          cat evidence/status.txt
+          for f in evidence/*.json; do
+            echo "--- $f"
+            head -c 12000 "$f"
+            echo
+          done
+          sha256sum evidence/* > checksums.sha256
+          mv checksums.sha256 evidence/
+          python3 - <<'PY'
+          import json,pathlib
+          for name in ("boards","overall","rv32im","thumbv6m"):
+              p=pathlib.Path("evidence")/(name+".json")
+              try:
+                  data=json.loads(p.read_text())
+                  assert isinstance(data,(dict,list))
+              except Exception as e:
+                  raise SystemExit(f"UNKNOWN: invalid or missing {name} JSON: {e}")
+          if any(not line.endswith(" 0") for line in pathlib.Path("evidence/status.txt").read_text().splitlines()):
+              raise SystemExit("UNKNOWN: official client request failed")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-live-public-board-receipt
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
