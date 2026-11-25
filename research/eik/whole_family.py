@@ -44,6 +44,8 @@ def search(lo,hi,options,fold):
             if r["status"]!="exact":
                 attempt.update(failed_cell=lo+ix,reason=r);break
             c=r["coeff"];v=exact_eval(c,t)
+            if int(v.min())-(1<<(s-2))<-(1<<31) or int(v.max())>=(1<<31):
+                attempt.update(failed_cell=lo+ix,reason="signed-rounding-range");break
             assert np.array_equal(b+(v>>s),yy)
             assert np.array_equal(2*b-H+((v-(1<<(s-2)))>>(s-1)),zz)
             if fold:
@@ -80,7 +82,7 @@ assert groups[0]["lo"]==START and groups[-1]["hi"]==END
 assert all(x["hi"]==y["lo"] for x,y in zip(groups,groups[1:]))
 # Remove obsolete table and both old reconstruction paths; no original fallback in this family.
 src=drop(src,r"static const struct rx_r ta_r\[138\] = \{.*?\};\n")
-src=drop(src,r"cellx_: \{\n.*?\n    \}\n(?=lt_:)")
+src=drop(src,r"cellx_:\n    \{\n.*?\n    \}\n(?=lt_:)")
 src=drop(src,r"scella_: \{\n.*?\n    \}\n(?=slt_:)")
 # Unreachable historical alternative kernels are not part of the exported control.
 # Remove for source-size budget; the control binary must remain the unchanged archive.
