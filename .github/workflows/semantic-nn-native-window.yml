@@ -54,6 +54,32 @@ jobs:
           entries = [hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.relative_to(root).as_posix() for p in sorted(root.rglob('*')) if p.is_file() and p.name != 'MANIFEST.sha256']
           (root / 'MANIFEST.sha256').write_text(chr(10).join(entries) + chr(10))
           PY
+      - name: Replay the compiled monitor against the independent sampled-time oracle
+        run: |
+          set -euo pipefail
+          python3 research/semantic_discovery_six/post_trial/native_nn/replay_binary.py \
+            --artifact "$RUNNER_TEMP/nn-native-evidence" --out "$RUNNER_TEMP/nn-native-replay"
+      - name: Reexecute evidence before testing scoped withdrawal and invalid transfer controls
+        run: |
+          set -euo pipefail
+          python3 research/semantic_discovery_six/post_trial/native_nn/gate_checks.py \
+            --artifact "$RUNNER_TEMP/nn-native-evidence" \
+            --certificate "$RUNNER_TEMP/nn-native-replay/native_certificate.json" \
+            --source-root "$RUNNER_TEMP/nn-source" --repo "$GITHUB_WORKSPACE" \
+            --out "$RUNNER_TEMP/nn-warrant-controls"
+      - name: Preserve replay attempts and finalize the complete evidence inventory
+        if: always()
+        run: |
+          set -euo pipefail
+          if test -d "$RUNNER_TEMP/nn-native-replay"; then cp -a "$RUNNER_TEMP/nn-native-replay" "$RUNNER_TEMP/nn-native-evidence/native-replay"; fi
+          if test -d "$RUNNER_TEMP/nn-warrant-controls"; then cp -a "$RUNNER_TEMP/nn-warrant-controls" "$RUNNER_TEMP/nn-native-evidence/warrant-controls"; fi
+          python3 - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'nn-native-evidence'
+          entries = [hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.relative_to(root).as_posix() for p in sorted(root.rglob('*')) if p.is_file() and p.name != 'MANIFEST.sha256']
+          (root / 'MANIFEST.sha256').write_text(chr(10).join(entries) + chr(10))
+          PY
       - name: Preserve native evidence including failed qualifications
         if: always()
         uses: actions/upload-artifact@v4
