@@ -1,0 +1,175 @@
+name: EIK integer rounding-slab synthesis pilot
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-integer-synthesis.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, cubic, quadratic]
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Exact input and evaluator provenance
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp ../prior/candidate.c baseline.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  baseline.c' | sha256sum -c -
+          pip install --require-hashes -r requirements.txt
+          pip install numpy==2.3.5 scipy==1.17.0
+          python -m eik setup
+          gcc -std=c11 -O2 -fPIC -shared -I third_party/exact-c/include -I third_party/exact-c/src third_party/exact-c/src/{acc,act,scalar,sha256}.c -o ref.so
+          if [ "$VARIANT" = control ]; then
+            cp baseline.c candidate.c
+          else
+            if [ "$VARIANT" = cubic ]; then
+              K=16 D=3 S=16
+            else
+              K=14 D=2 S=18
+            fi
+            python ../research/eik/band.py ref.so baseline.c candidate.c --start 0x3f800000 --end 0x3fa00000 --k "$K" --d "$D" --scale "$S" | tee evidence/synth.log
+            cp candidate.c.json evidence/coefficients.json
+          fi
+          # A different solver version or tie choice is not silently treated as
+          # the already verified local artifact. A new exact candidate can be
+          # explored independently, but is identified separately.
+          python - <<'PY'
+          import os,hashlib,pathlib,json
+          pins={'control':'3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4','cubic':'233a32fd3e5768bed25a0946e8031735feb952044a2402ae366da2772c34e5f6','quadratic':'6224bb17d718e06dc506f1e5b50eef75694ea91833f106f7f3eaf5d9b1928351'}
+          actual=hashlib.sha256(pathlib.Path('candidate.c').read_bytes()).hexdigest()
+          expected=pins[os.environ['VARIANT']]
+          report={'local_source_sha256':expected,'actual_source_sha256':actual,'exact_local_reproduction':actual==expected}
+          print(json.dumps(report));pathlib.Path('evidence/reproduction.json').write_text(json.dumps(report,indent=2))
+          PY
+          cp candidate.c evidence/
+          sha256sum baseline.c candidate.c > evidence/source.sha256
+          git rev-parse HEAD > evidence/evaluator.sha
+      - name: Unchanged official policy and complete affected range digest check
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          python -m eik fullcheck candidate.c --function sigmoid --chunks 1015:1020 --threads 2 --out evidence/host-range.json
+          cat evidence/host-range.json
+      - name: Independent complete band comparison on compiled C
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          gcc -std=c11 -O2 -shared -fPIC -include stdint.h candidate.c -o candidate.so
+          python - <<'PY'
+          import ctypes as C,json,pathlib
+          a=C.CDLL(str(pathlib.Path('ref.so').resolve()));b=C.CDLL(str(pathlib.Path('candidate.so').resolve()))
+          f=a.er_sigmoid;g=b.eik_sigmoid
+          for q in (f,g):q.argtypes=[C.c_uint32];q.restype=C.c_uint32
+          n=0;bad=0
+          for w in range(0x3f800000,0x3fa00000):
+              n+=1;bad+=f(w)!=g(w)
+          p={'words':n,'mismatches':bad};print(json.dumps(p));pathlib.Path('evidence/compiled-band.json').write_text(json.dumps(p));assert bad==0
+          PY
+      - name: Retired instruction cost in the whole band and official global score
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from eik import toolchain as T,reference as R
+          from eik.emu import Core
+          import json
+          words=list(range(0x3f800000,0x3fa00000,2048))
+          want=R.outputs('sigmoid',words)
+          report={}
+          for target in ['rv32im','thumbv6m','thumbv7em']:
+              core=Core(T.guest_image(Path('candidate.c').resolve(),target),target)
+              costs=[]
+              for w,y in zip(words,want):
+                  got,n=core.call('sigmoid',w)
+                  assert got==y,(target,w,got,y)
+                  costs.append(n)
+              report[target]={'n':len(costs),'mean':sum(costs)/len(costs),'min':min(costs),'max':max(costs)}
+          print(json.dumps(report,indent=2));Path('evidence/band-cost.json').write_text(json.dumps(report,indent=2))
+          PY
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          cat evidence/measure.json
+          python -m eik measure candidate.c --seed 20261201 --out evidence/heldout.json
+          cat evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-synth-${{ matrix.variant }}
+          path: kit/evidence/
+  reconcile:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-synth-*
+          path: runs
+      - name: Compare exact paired evidence and decide on expansion
+        run: |
+          mkdir evidence
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          reports={}
+          for v in ['control','cubic','quadratic']:
+              d=Path('runs')/('eik-synth-'+v)
+              try:
+                  a,b,c,q,z=[json.loads((d/f).read_text()) for f in ['measure.json','heldout.json','band-cost.json','host-range.json','compiled-band.json']]
+                  h=hashlib.sha256((d/'candidate.c').read_bytes()).hexdigest()
+                  assert a['sha256']==b['sha256']==h
+                  assert a['verdict']==b['verdict']=='passed'
+                  assert z['mismatches']==0 and z['words']==2097152
+                  # The official fullcheck command was required to exit
+                  # successfully before the independent compiled-band test.
+                  reports[v]={'source':h,'discovery':a,'heldout':b,'band':c}
+              except Exception as e:print(v,'not admitted',repr(e))
+          ctrl=reports['control']
+          result={}
+          for v,r in reports.items():
+              for k in ['discovery','heldout']:
+                  assert r[k]['inputs_sha256']==ctrl[k]['inputs_sha256']
+                  assert r[k]['fingerprint']['measurement']==ctrl[k]['fingerprint']['measurement']
+              result[v]={}
+              for target in ['rv32im','thumbv6m','thumbv7em']:
+                  x=r['band'][target]['mean'];y=ctrl['band'][target]['mean']
+                  result[v][target]={'band_instr':x,'band_gain':1-x/y,'score':r['discovery']['scores'][target]['S'],'holdout':r['heldout']['scores'][target]['S'],'bytes':r['discovery']['scores'][target]['bytes']}
+          print(json.dumps(result,indent=2));Path('evidence/summary.json').write_text(json.dumps(result,indent=2))
+          # Predeclared expansion gate: at least 10% fewer retired instructions
+          # throughout this band AND no deterioration on either global seed.
+          c=ctrl['discovery']['scores']['rv32im']['S'];h=ctrl['heldout']['scores']['rv32im']['S']
+          admitted=[v for v in result if v!='control' and result[v]['rv32im']['band_gain']>=0.10 and result[v]['rv32im']['score']<=c and result[v]['rv32im']['holdout']<=h]
+          print('admitted for expansion',admitted)
+          Path('evidence/decision.json').write_text(json.dumps({'expand':admitted,'full_qualification':'not triggered by a partial-domain research pilot'},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-synth-decision
+          path: evidence/
