@@ -1,0 +1,195 @@
+name: EIK whole-family joint rounding replacement
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-whole-family.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, uniform-cubic, split-cubic, split-quadratic]
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Pin evaluator and generate complete family
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp ../prior/candidate.c baseline.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  baseline.c' | sha256sum -c -
+          pip install --require-hashes -r requirements.txt
+          pip install numpy==2.3.5 scipy==1.17.0
+          python -m eik setup
+          gcc -std=c11 -O2 -fPIC -shared -I third_party/exact-c/include -I third_party/exact-c/src third_party/exact-c/src/{acc,act,scalar,sha256}.c -o ref.so
+          if [ "$VARIANT" = control ]; then
+            cp baseline.c evidence/candidate.c
+          else
+            python ../research/eik/whole_family.py ref.so baseline.c evidence "$VARIANT" | tee evidence/synthesis.log
+          fi
+          git rev-parse HEAD > evidence/evaluator.sha
+      - name: Gate, independently check complete affected domains, and measure
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          if [ ! -f evidence/candidate.c ]; then
+            test -s evidence/synthesis.json
+            cat evidence/synthesis.json | head -c 2000 || true
+            exit 0
+          fi
+          cp evidence/candidate.c candidate.c
+          sha256sum candidate.c > evidence/source.sha256
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          gcc -std=c11 -O2 -shared -fPIC -include stdint.h candidate.c -o candidate.so
+          python - <<'PY'
+          import ctypes as C, json, pathlib
+          a=C.CDLL(str(pathlib.Path('ref.so').resolve()))
+          b=C.CDLL(str(pathlib.Path('candidate.so').resolve()))
+          result={}
+          for fn,lo,hi in [('sigmoid',0x407ff001,0x418ab001),('tanh',0x40000000,0x41103001),('tanh',0xc0000000,0xc1103001)]:
+              f=getattr(a,'er_'+fn);g=getattr(b,'eik_'+fn)
+              for q in (f,g):q.argtypes=[C.c_uint32];q.restype=C.c_uint32
+              n=0;bad=0;first=None
+              for w in range(lo,hi):
+                  x,y=f(w),g(w);n+=1
+                  if x!=y:
+                      bad+=1
+                      if first is None:first=[hex(w),hex(x),hex(y)]
+              result[fn+'-'+hex(lo)]={'words':n,'mismatches':bad,'first':first}
+              pathlib.Path('evidence/compiled-region.json').write_text(json.dumps(result,indent=2))
+              assert bad==0,(fn,first)
+          PY
+          python -m eik fullcheck candidate.c --function sigmoid --chunks 1031:1050 --threads 2 --out evidence/host-sigmoid.json
+          python -m eik fullcheck candidate.c --function tanh --chunks 1023:1042 --threads 2 --out evidence/host-tanh-positive.json
+          python -m eik fullcheck candidate.c --function tanh --chunks 3071:3090 --threads 2 --out evidence/host-tanh-negative.json
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          python -m eik measure candidate.c --seed 20261204 --out evidence/heldout.json
+          cat evidence/measure.json
+          cat evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-whole-family-${{ matrix.variant }}
+          path: kit/evidence/
+  reconcile:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    outputs:
+      qualify: ${{ steps.decision.outputs.qualify }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-whole-family-*
+          path: runs
+      - id: decision
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          python - <<'PY'
+          import pathlib,json,hashlib,os
+          result={};admitted={}
+          for d in sorted(pathlib.Path('runs').glob('eik-whole-family-*')):
+              v=d.name.removeprefix('eik-whole-family-')
+              try:
+                  if (d/'synthesis.json').exists():
+                      s=json.loads((d/'synthesis.json').read_text())
+                      result[v]={'synthesis':s['status'],'attempts':s['attempts'],'table_bytes':s.get('table_bytes')}
+                  else: result[v]={}
+                  a,b=[json.loads((d/f).read_text()) for f in ['measure.json','heldout.json']]
+                  h=hashlib.sha256((d/'candidate.c').read_bytes()).hexdigest()
+                  assert a['sha256']==b['sha256']==h and a['verdict']==b['verdict']=='passed'
+                  c=json.loads((d/'compiled-region.json').read_text())
+                  assert len(c)==3 and all(x['mismatches']==0 for x in c.values())
+                  for f in ['host-sigmoid.json','host-tanh-positive.json','host-tanh-negative.json']:
+                      assert (d/f).exists()
+                  admitted[v]=(a,b,d)
+                  result[v]['scores']={t:{'discovery':a['scores'][t]['S'],'heldout':b['scores'][t]['S'],'bytes':a['scores'][t].get('bytes')} for t in ['rv32im','thumbv6m','thumbv7em','overall']}
+              except Exception as e:
+                  result.setdefault(v,{})['not_admitted']=repr(e)
+          assert 'control' in admitted,'no valid control'
+          c=admitted['control']
+          for v,(a,b,d) in admitted.items():
+              for r,ctrl in zip((a,b),c[:2]):
+                  assert r['inputs_sha256']==ctrl['inputs_sha256'] and r['fingerprint']['measurement']==ctrl['fingerprint']['measurement']
+          score=lambda v,i:admitted[v][i]['scores']['rv32im']['S']
+          winners=[v for v in admitted if v!='control' and all(score(v,i)<score('control',i) for i in [0,1])]
+          best=min(winners,key=lambda v:max(score(v,0),score(v,1))) if winners else 'control'
+          # Historical research gate only, not a claim about the live champion.
+          qualifies=best!='control' and max(score(best,0),score(best,1))<=27.354
+          pathlib.Path('evidence/candidate.c').write_bytes((admitted[best][2]/'candidate.c').read_bytes())
+          pathlib.Path('evidence/decision.json').write_text(json.dumps({'results':result,'paired_winners':winners,'selected':best,'qualify':qualifies},indent=2))
+          print('paired winners',winners,'best',best,'qualification trigger',qualifies)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('qualify='+str(qualifies).lower()+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-whole-family-selected
+          path: evidence/
+  qualify:
+    needs: reconcile
+    if: needs.reconcile.outputs.qualify == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [sigmoid,tanh,exp]
+        target: [host,rv32im,thumbv6m,thumbv7em]
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-whole-family-selected
+          path: selected
+      - name: Complete independent qualification
+        env:
+          FN: ${{ matrix.function }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp ../selected/candidate.c .
+          mkdir evidence
+          sha256sum candidate.c > evidence/source.sha256
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          if [ "$TARGET" = host ]; then
+            python -m eik fullcheck candidate.c --function "$FN" --out evidence/report.json
+          else
+            sudo apt-get update
+            sudo apt-get install -y qemu-user
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out evidence/report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-whole-family-full-${{ matrix.function }}-${{ matrix.target }}
+          path: kit/evidence/
