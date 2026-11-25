@@ -121,12 +121,12 @@ jobs:
           sudo sysctl -w vm.max_map_count=524288
           sudo sysctl -w fs.file-max=131072 || true
           docker network create semantic-lab
-          docker pull sonarqube:26.11.0.134175-community
-          docker pull sonarsource/sonar-scanner-cli:latest
-          docker image inspect sonarqube:26.11.0.134175-community --format '{{json .RepoDigests}}' > sonar-receipts/server-image-digests.json
-          docker image inspect sonarsource/sonar-scanner-cli:latest --format '{{json .RepoDigests}}' > sonar-receipts/scanner-image-digests.json
-          docker run --rm sonarsource/sonar-scanner-cli:latest --version > sonar-receipts/scanner-version.txt 2>&1
-          docker run -d --name sq --network semantic-lab -p 127.0.0.1:9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:26.11.0.134175-community
+          docker pull sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba
+          docker pull sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84
+          docker image inspect sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba --format '{{json .RepoDigests}}' > sonar-receipts/server-image-digests.json
+          docker image inspect sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 --format '{{json .RepoDigests}}' > sonar-receipts/scanner-image-digests.json
+          docker run --rm sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 --version > sonar-receipts/scanner-version.txt 2>&1
+          docker run -d --name sq --network semantic-lab -p 127.0.0.1:9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube@sha256:7b2296713a92b8ea0dd7a083a25faadc59376c9a1e6daf2744a89711c54ea1ba
           for i in $(seq 1 90); do
             if curl -fsS http://127.0.0.1:9000/api/system/status | jq -e '.status=="UP"' >/dev/null; then break; fi
             sleep 5
@@ -138,20 +138,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pass="$(openssl rand -hex 24)"
+          pass="Aa1!$(openssl rand -hex 20)"
           echo "::add-mask::$pass"
-          curl -fsS -u admin:admin -X POST http://127.0.0.1:9000/api/users/change_password --data-urlencode login=admin --data-urlencode previousPassword=admin --data-urlencode "password=$pass" >/dev/null
+          curl --fail-with-body -sS -u admin:admin -X POST http://127.0.0.1:9000/api/users/change_password --data-urlencode login=admin --data-urlencode previousPassword=admin --data-urlencode "password=$pass" >/dev/null
           token="$(curl -fsS -u "admin:$pass" -X POST http://127.0.0.1:9000/api/user_tokens/generate --data-urlencode name=semantic-comparator | jq -er '.token')"
           echo "::add-mask::$token"
-          api() { curl -fsS -u "$token:" "http://127.0.0.1:9000/$1"; }
+          api() { curl --fail-with-body -sS -u "$token:" "http://127.0.0.1:9000/$1"; }
           api api/plugins/installed > sonar-receipts/plugins.json
           api 'api/qualityprofiles/search?language=py' > sonar-receipts/python-profiles.json
+          profile="$(jq -er '[.profiles[] | select(.isDefault == true)] | if length == 1 then .[0].key else error("expected one default Python profile") end' sonar-receipts/python-profiles.json)"
+          page=1
+          while true; do
+            f="sonar-receipts/python-rules-$page.json"
+            api "api/rules/search?activation=true&qprofile=$profile&languages=py&ps=500&p=$page" > "$f"
+            total="$(jq -er '.total' "$f")"
+            if (( page * 500 >= total )); then break; fi
+            page=$((page+1))
+            if (( page>20 )); then echo "Rule search exceeded supported result window"; exit 1; fi
+          done
           for arm in before after; do
             key="cosmos-$arm"
             docker run --rm --network semantic-lab --user 0:0 \
               -e SONAR_HOST_URL=http://sq:9000 -e SONAR_TOKEN="$token" \
               -v "$PWD/$arm:/usr/src:ro" \
-              sonarsource/sonar-scanner-cli:latest \
+              sonarsource/sonar-scanner-cli@sha256:8bb84373f00346f9a579adb7ccb2999f8cd050ab7167fa9ae08a16069de03c84 \
               -Dsonar.projectKey="$key" -Dsonar.projectBaseDir=/usr/src \
               -Dsonar.sources=openc3/python/openc3 -Dsonar.sourceEncoding=UTF-8 \
               -Dsonar.python.version=3.12 -Dsonar.scm.disabled=true \
@@ -166,6 +176,8 @@ jobs:
             jq -e '.current.status=="SUCCESS" and (.queue|length)==0' "sonar-receipts/$arm-ce.json"
             api "api/qualitygates/project_status?projectKey=$key" > "sonar-receipts/$arm-gate.json"
             api "api/qualityprofiles/search?project=$key&language=py" > "sonar-receipts/$arm-profile.json"
+            jq -e --arg profile "$profile" '[.profiles[] | select(.language=="py")] | length==1 and .[0].key==$profile' "sonar-receipts/$arm-profile.json" >/dev/null
+            api "api/measures/component?component=$key&metricKeys=files,ncloc,violations" > "sonar-receipts/$arm-measures.json"
             page=1
             while true; do
               f="sonar-receipts/$arm-issues-$page.json"
