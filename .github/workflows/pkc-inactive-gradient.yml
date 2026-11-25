@@ -19,7 +19,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Build and execute
+      - name: Native before and after
         working-directory: pkc
         run: |
           set -eo pipefail
@@ -28,13 +28,22 @@ jobs:
           lake build +PropertyKindCalculus.Uncertainty.Sensitivity
           git -C .lake/packages/TorchLean rev-parse HEAD | tee dependency.txt
           test "$(cat dependency.txt)" = 65aec783e51f7961660971651060d03fdffebf05
-          lake env lean --run Probe.lean | tee probe.txt
+          lake env lean --run Probe.lean | tee before.txt
+          python3 ../repair.py
+          git diff > repair.diff
+          lake build +PropertyKindCalculus.Uncertainty.Sensitivity
+          lake env lean --run Probe.lean | tee after.txt
+          python3 ../verify.py
+          sha256sum Probe.lean before.txt after.txt dependency.txt repair.diff > SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pkc-inactive-gradient-evidence
+          name: pkc-inactive-gradient-repair-evidence
           path: |
             pkc/Probe.lean
-            pkc/probe.txt
+            pkc/before.txt
+            pkc/after.txt
             pkc/dependency.txt
+            pkc/repair.diff
+            pkc/SHA256SUMS
             pkc/lake-manifest.json

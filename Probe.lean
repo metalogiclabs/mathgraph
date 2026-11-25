@@ -3,28 +3,37 @@ open TorchLean
 open PropertyKindCalculus.Paradigm
 open PropertyKindCalculus.Uncertainty.Sensitivity
 
-def model (dead : String) : ScalarModel := fun xs => ⟨do
+def recordDead (op : String) (x : Nat) : TapeM Float Unit := do
+  if op == "none" then pure ()
+  else
+    let _ ← match op with
+      | "sqrt" => TapeM.sqrt (s := Shape.scalar) x
+      | "log" => TapeM.log (s := Shape.scalar) x
+      | "exp" => TapeM.exp (s := Shape.scalar) x
+      | "abs" => TapeM.abs (s := Shape.scalar) x
+      | "add" => TapeM.add (s := Shape.scalar) x x
+      | "sub" => TapeM.sub (s := Shape.scalar) x x
+      | "mul" => TapeM.mul (s := Shape.scalar) x x
+      | "div" => TapeM.div (s := Shape.scalar) x x
+      | "min" => TapeM.min (s := Shape.scalar) x x
+      | "max" => TapeM.max (s := Shape.scalar) x x
+      | _ => throw "unknown op"
+    pure ()
+
+def model (op : String) (active : Bool) : ScalarModel := fun xs => ⟨do
   let x ← match xs with
     | a :: _ => a.run
     | [] => throw "missing input"
-  if dead == "sqrt" then
-    let _ ← TapeM.sqrt (s := Shape.scalar) x
-    pure ()
-  else if dead == "log" then
-    let _ ← TapeM.log (s := Shape.scalar) x
-    pure ()
-  else if dead == "exp" then
-    let _ ← TapeM.exp (s := Shape.scalar) x
-    pure ()
-  else pure ()
-  pure x⟩
+  let out ← if active then TapeM.mul (s := Shape.scalar) x x else pure x
+  recordDead op x
+  pure out⟩
 
 def main : IO Unit := do
-  for x in ([0.0, 1.0, 1000.0] : List Float) do
-    for op in ["none", "sqrt", "log", "exp"] do
-      match gradient (model op) [x] with
-      | .error e => IO.println s!"x={x} op={op} ERROR {e}"
-      | .ok gs => IO.println s!"x={x} op={op} gradients={gs}"
-    match gradient (model "none") [x] with
-    | .ok [g] => unless g == 1.0 do throw (IO.userError "baseline failed")
-    | _ => throw (IO.userError "baseline failed")
+  for x in ([-1000.0, -1.0, -0.0, 0.0, 1.0, 1000.0] : List Float) do
+    for active in [false,true] do
+      for op in ["none","sqrt","log","exp","abs","add","sub","mul","div","min","max"] do
+        let expected := if active then 2*x else 1.0
+        match gradient (model op active) [x] with
+        | .error e => IO.println s!"CASE x={x} active={active} op={op} ERROR {e}"
+        | .ok [g] => IO.println s!"CASE x={x} active={active} op={op} gradient={g} expected={expected} pass={g == expected}"
+        | .ok _ => throw (IO.userError "unexpected gradient arity")
