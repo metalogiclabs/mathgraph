@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "objective": "Six-case comparative discovery pilot using two isolated adaptive investigator contexts; no outcome labels or suspected defects supplied.",
+  "base_commit": "d87a266ee161e95c21f5abb1b8e7afb8bbd984ab",
+  "repositories": {
+    "yaml": {
+      "repository": "yaml/yaml-test-suite",
+      "branch": "data",
+      "commit": "6ad3d2c62885d82fc349026c136ef560838fdf3d"
+    },
+    "aerospace": {
+      "repository": "NASA-SW-VnV/fret",
+      "branch": "master",
+      "commit": "cf0f913cc15c41705e803593297e89cd6056b839"
+    },
+    "mathematics": {
+      "repository": "pysmt/pysmt",
+      "branch": "master",
+      "commit": "90a688600fd4a75ca27de56b80dcbe7fb46ea42d"
+    }
+  },
+  "selection": "After public freeze of prompts, selector and broker, select two eligible records per domain by SHA256(protocol bytes + domain + source-relative ID). No selection by outcome. Preserve entire eligibility roster and input hashes. Fewer than two eligible records is a selection failure, not permission to cherry-pick.",
+  "eligibility": {
+    "yaml": "Official in.yaml/in.json pairs <=4096 bytes each, JSON expected output parses, no error marker. Assess exact fixture under its published expected-output contract; do not assert that PyYAML advertises this dialect.",
+    "aerospace": "caseStudies/**/*.json requirements with reqid, fulltext and semantics.CoCoSpecCode. Exclude LiftPlusCruise, sounding-rocket paths and LPC_ IDs exposed previously. De-duplicate requirement identity. No filter by semantic outcome or ease of solving. Primary finite cohort: lengths1-3, Boolean assignments, numeric {-1,0,1} plus requirement literals and +/-1 neighbors, declared source types, maximum4096 traces. Unsupported types/semantics yield unresolved coverage, not ground-truth UNKNOWN.",
+    "mathematics": "Externally authored .smt2 files <=8192 bytes with exactly one check-sat and no push/pop/reset. Prefer pure Boolean declarations/operations with at most10 variables. If fewer than2, use all such small SMT files with at most10 declarations. Strip set-info :status and comments from the investigator view, preserve full original privately. Mathematical logic, not arbitrary prose-to-Lean correspondence. Reject check-sat-assuming and assertion/declaration/definition changes after the sole query. De-duplicate identical normalized problems. Investigator file-origin names withheld to avoid outcome-bearing filenames."
+  },
+  "investigators": {
+    "settings": "Same inherited model/settings, separate contexts with no parent transcript. Exact service weights and sampling seed unavailable.",
+    "mathgraph": "Use existing typed warrant resolver and six-field boundary records to organize source, proof/execution and correspondence obligations. Construct checks as necessary.",
+    "conventional": "Use the strongest conventional adaptive audit you can construct: direct evidence ledger, hypothesis-driven tests, dependency tracking, retained results and caches all allowed. No forced recomputation or stateless comparator.",
+    "equal_access": "Same six cases, shared tool kit, installed dependencies, source data, ability to author adapters and test programs, and budgets. Neither arm sees other outputs or private adjudication.",
+    "budget": {
+      "credits_per_case": 24,
+      "shared_credits": 12,
+      "read": 1,
+      "list": 1,
+      "write": 1,
+      "run": 4,
+      "finalize": 1
+    },
+    "interface": "All research reads, writes and executions through frozen broker. Shared actions may test helpers on synthetic calibrations, not read actual cases. Every actual case must first be read through its own case ID. Case runs may consume that case and previously retained results, not uninspected other cases. Logs include failures, full stdout/stderr, bytes and wall times.",
+    "adaptation": "Prompts and broker fixed before selection; investigators may construct adapters during investigation, with all setup/code/writes counted. Root does not repair their methods or supply semantic hints."
+  },
+  "controls": "After selection, second-ranked aerospace and mathematical cases receive an explicitly withdrawn source-authority receipt while source bytes remain visible. These two context interventions are disclosed controls, not naturally occurring source defects. They require UNKNOWN for a current evidence-authorized overall conclusion, while independent observations may still be reported.",
+  "outputs": "Per case: WARRANTED_BOUNDED / REJECTED_TRANSFER / UNKNOWN; exact claimed scope; proof/execution status separately from correspondence status; evidence paths; concrete witness when rejecting; assumptions; unresolved obligations. Freeze final.json before adjudication.",
+  "adjudication": "A third isolated reviewer receives original source material, full logs and both locked outputs only after the arms finish. Independently replay consequential evidence and distinguish native proof validity, correspondence, current warrant, method abstention and adjudicator UNKNOWN. Do not treat solver success or investigator prose as sufficient.",
+  "scoring": "Compare determinate correct conclusions, unsupported decisive warrants, missed coverage and correct abstentions. Compare broker actions/credits/bytes, code written and recorded investigation wall time. Report common corpus/setup and orchestration elapsed time. Human/model token and monetary costs unavailable: total economic superiority remains UNKNOWN. One paired six-case run is not statistical generalization. Report the two deliberate withdrawal controls separately from natural-case discovery coverage. No superiority conclusion from merely detecting disclosed withdrawals.",
+  "holdout": "Operational heldout selection after public executable/prompt freeze, not contamination-free pretraining. FRET source repository seen before but excluded earlier cases; prior exposure disclosed.",
+  "boundary": "Research-only study. No production modules, upstream changes, external messages or new general theorem-prover claims. Native source qualification and all failures preserved.",
+  "publication_integrity": "Source bytes read directly from regular-file blobs in pinned Git trees, never working-tree rglob. Frozen kit bytes checked against the public freeze. Immutable broker requests and run code/result snapshots retained."
+}

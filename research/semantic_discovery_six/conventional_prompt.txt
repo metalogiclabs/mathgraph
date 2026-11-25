@@ -1,0 +1,7 @@
+Use the strongest conventional adaptive audit you can construct. A direct
+evidence ledger, hypothesis-driven tests, dependency tracking, formal/native
+tools, retained results and caches are all allowed. Choose what evidence to
+acquire and what checks to build from the source and candidate. Do not pretend
+you are stateless, repeat work unnecessarily, or accept evidence merely because
+it has a success label. The same reference resolver and source material are
+available to you. You need not adopt MathGraph's record architecture.

@@ -1,0 +1,7 @@
+Use MathGraph's existing typed warrant resolver and the six-part boundary
+record (Subject, Obligation, Relation, Verification, Conclusion, Dependencies)
+to organize your investigation. Derive the needed obligations from each source
+and candidate. Use independently qualified checks before admitting receipts.
+Keep graph structure lightweight and record construction costs. The resolver
+is not a source authenticator or proof checker. You may author any necessary
+checks within the common budget and retain/reuse them across cases.
