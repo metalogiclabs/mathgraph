@@ -1,0 +1,169 @@
+name: EIK exact arithmetic and dispatch quotient
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-quotient.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, correction, central, central-ptr, small, exp-shifts, address, dispatch-pos, dispatch-neg]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Reproduce exact local source
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp ../prior/candidate.c baseline.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  baseline.c' | sha256sum -c -
+          if [ "$VARIANT" = control ]; then
+            cp baseline.c candidate.c
+          else
+            python ../research/eik/quotient.py baseline.c candidate.c "$VARIANT"
+          fi
+          python - <<'PY'
+          import os,pathlib,hashlib
+          pins={
+          'control':'3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4',
+          'correction':'9805dee7f6ef34aaf3e6f72d216e90d1b210636b25733824bd691188ad4a0b4f',
+          'central':'c7e56cc4d31cb59c664dffe4454a80bb9cfededeea86a42dc95c9498ecc659be',
+          'central-ptr':'2ad5bfac21e1311cad33a13e09e867ccc76d60dc2d09b11e55ca7c29f186948c',
+          'small':'2a7cf07c270a3fcaa13e9f36d20be678473618ffc86d2343ce55439d99c4e0f5',
+          'exp-shifts':'5a55f38d2090a1936411492f7837ec189914a24845a194b3795f74109d5eb995',
+          'address':'8cc9a99d42ff3d015d346cb0913dbe47e78b21d4849a7e7caccb9b0a6f3cdc03',
+          'dispatch-pos':'0b5d5d406bf4b5a40645dc7ab254739bfdebbfddff9eedb73d16d161e3603306',
+          'dispatch-neg':'325224f4ec8cf2bf54f317f7e4ecc0d49dd70a9b1339129e04937671ffc38ce8'}
+          h=hashlib.sha256(pathlib.Path('candidate.c').read_bytes()).hexdigest()
+          assert h==pins[os.environ['VARIANT']],(h,pins[os.environ['VARIANT']])
+          PY
+          cp candidate.c evidence/
+          sha256sum candidate.c > evidence/source.sha256
+          git rev-parse HEAD > evidence/evaluator.sha
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+      - name: Official static gate, independent samples and paired measurements
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          python -m eik measure candidate.c --seed 20261205 --out evidence/heldout.json
+          cat evidence/measure.json
+          cat evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-quotient-${{ matrix.variant }}
+          path: kit/evidence/
+  reconcile:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    outputs:
+      qualify: ${{ steps.decision.outputs.qualify }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-quotient-*
+          path: runs
+      - id: decision
+        name: Compare matched seeds; no composition of failed transformations
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          python - <<'PY'
+          import pathlib,json,hashlib,os
+          result={};admitted={}
+          for d in sorted(pathlib.Path('runs').glob('eik-quotient-*')):
+              v=d.name.removeprefix('eik-quotient-')
+              try:
+                  a,b=[json.loads((d/f).read_text()) for f in ['measure.json','heldout.json']]
+                  h=hashlib.sha256((d/'candidate.c').read_bytes()).hexdigest()
+                  assert a['sha256']==b['sha256']==h and a['verdict']==b['verdict']=='passed'
+                  result[v]={t:{'discovery':a['scores'][t]['S'],'heldout':b['scores'][t]['S'],'bytes':a['scores'][t].get('bytes')} for t in ['rv32im','thumbv6m','thumbv7em','overall']}
+                  admitted[v]=(a,b,d)
+              except Exception as e:result[v]={'not_admitted':repr(e)}
+          assert 'control' in admitted
+          c=admitted['control']
+          for v,(a,b,d) in admitted.items():
+              for r,ctrl in zip((a,b),c[:2]):
+                  assert r['inputs_sha256']==ctrl['inputs_sha256'] and r['fingerprint']['measurement']==ctrl['fingerprint']['measurement']
+          score=lambda v,i:admitted[v][i]['scores']['rv32im']['S']
+          winners=[v for v in admitted if v!='control' and all(score(v,i)<score('control',i) for i in [0,1])]
+          best=min(winners,key=lambda v:max(score(v,0),score(v,1))) if winners else 'control'
+          qualifies=best!='control' and max(score(best,0),score(best,1))<=27.354
+          pathlib.Path('evidence/candidate.c').write_bytes((admitted[best][2]/'candidate.c').read_bytes())
+          pathlib.Path('evidence/decision.json').write_text(json.dumps({'results':result,'paired_winners':winners,'selected':best,'qualify':qualifies},indent=2))
+          print(json.dumps(result,indent=2));print('paired winners',winners,'best',best,'qualification trigger',qualifies)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('qualify='+str(qualifies).lower()+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-quotient-selected
+          path: evidence/
+  qualify:
+    needs: reconcile
+    if: needs.reconcile.outputs.qualify == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [sigmoid,tanh,exp]
+        target: [host,rv32im,thumbv6m,thumbv7em]
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-quotient-selected
+          path: selected
+      - name: Complete independent qualification
+        env:
+          FN: ${{ matrix.function }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp ../selected/candidate.c .
+          mkdir evidence
+          sha256sum candidate.c > evidence/source.sha256
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          if [ "$TARGET" = host ]; then
+            python -m eik fullcheck candidate.c --function "$FN" --out evidence/report.json
+          else
+            sudo apt-get update
+            sudo apt-get install -y qemu-user
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out evidence/report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-quotient-full-${{ matrix.function }}-${{ matrix.target }}
+          path: kit/evidence/
