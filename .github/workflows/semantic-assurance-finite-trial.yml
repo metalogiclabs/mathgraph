@@ -1,0 +1,276 @@
+name: Finite semantic assurance trial
+on:
+  push:
+    branches: [research/semantic-assurance-finite-trial-20261126]
+    paths: ['.github/workflows/semantic-assurance-finite-trial.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check the exact frozen fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          cat > evidence/MeaningTrial.lean <<'LEAN'
+          import Lean
+          set_option autoImplicit false
+          namespace MeaningTrial
+          
+          def cand_denial_1 (a b c d : Bool) : Bool := ((!c) && (!d))
+          def intent_denial_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_1 : cand_denial_1 false false false false = true := by decide
+          #print axioms submitted_denial_1
+          theorem bridge_denial_1 (a b c d : Bool) : cand_denial_1 a b c d = true → intent_denial_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_denial_1
+          def cand_denial_2 (a b c d : Bool) : Bool := (!(c || d))
+          def intent_denial_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_2 : cand_denial_2 false false false false = true := by decide
+          #print axioms submitted_denial_2
+          theorem bridge_denial_2 (a b c d : Bool) : cand_denial_2 a b c d = true → intent_denial_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_denial_2
+          def cand_denial_3 (a b c d : Bool) : Bool := (((!c) && (!d)) && a)
+          def intent_denial_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_3 : cand_denial_3 true false false false = true := by decide
+          #print axioms submitted_denial_3
+          theorem bridge_denial_3 (a b c d : Bool) : cand_denial_3 a b c d = true → intent_denial_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_denial_3
+          def cand_denial_4 (a b c d : Bool) : Bool := (!c)
+          def intent_denial_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_4 : cand_denial_4 false false false true = true := by decide
+          #print axioms submitted_denial_4
+          theorem mismatch_denial_4 : cand_denial_4 false false false true = true ∧ intent_denial_4 false false false true = false := by decide
+          #print axioms mismatch_denial_4
+          def cand_denial_5 (a b c d : Bool) : Bool := (!d)
+          def intent_denial_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_5 : cand_denial_5 false false false false = true := by decide
+          #print axioms submitted_denial_5
+          theorem mismatch_denial_5 : cand_denial_5 false false true false = true ∧ intent_denial_5 false false true false = false := by decide
+          #print axioms mismatch_denial_5
+          def cand_denial_6 (a b c d : Bool) : Bool := ((!c) && (!d))
+          def intent_denial_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == false) && (d == false))
+          theorem submitted_denial_6 : cand_denial_6 false false false false = true := by decide
+          #print axioms submitted_denial_6
+          def cand_alarm_1 (a b c d : Bool) : Bool := (c && d)
+          def intent_alarm_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_1 : cand_alarm_1 false false true true = true := by decide
+          #print axioms submitted_alarm_1
+          theorem bridge_alarm_1 (a b c d : Bool) : cand_alarm_1 a b c d = true → intent_alarm_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_alarm_1
+          def cand_alarm_2 (a b c d : Bool) : Bool := (!((!c) || (!d)))
+          def intent_alarm_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_2 : cand_alarm_2 false false true true = true := by decide
+          #print axioms submitted_alarm_2
+          theorem bridge_alarm_2 (a b c d : Bool) : cand_alarm_2 a b c d = true → intent_alarm_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_alarm_2
+          def cand_alarm_3 (a b c d : Bool) : Bool := ((c && d) && (!a))
+          def intent_alarm_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_3 : cand_alarm_3 false false true true = true := by decide
+          #print axioms submitted_alarm_3
+          theorem bridge_alarm_3 (a b c d : Bool) : cand_alarm_3 a b c d = true → intent_alarm_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_alarm_3
+          def cand_alarm_4 (a b c d : Bool) : Bool := c
+          def intent_alarm_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_4 : cand_alarm_4 false false true false = true := by decide
+          #print axioms submitted_alarm_4
+          theorem mismatch_alarm_4 : cand_alarm_4 false false true false = true ∧ intent_alarm_4 false false true false = false := by decide
+          #print axioms mismatch_alarm_4
+          def cand_alarm_5 (a b c d : Bool) : Bool := (c || d)
+          def intent_alarm_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_5 : cand_alarm_5 false false true true = true := by decide
+          #print axioms submitted_alarm_5
+          theorem mismatch_alarm_5 : cand_alarm_5 false false false true = true ∧ intent_alarm_5 false false false true = false := by decide
+          #print axioms mismatch_alarm_5
+          def cand_alarm_6 (a b c d : Bool) : Bool := (c && d)
+          def intent_alarm_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_alarm_6 : cand_alarm_6 false false true true = true := by decide
+          #print axioms submitted_alarm_6
+          def cand_monotone_1 (a b c d : Bool) : Bool := ((((!a) || b) && ((!b) || c)) && ((!c) || d))
+          def intent_monotone_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_1 : cand_monotone_1 false false false false = true := by decide
+          #print axioms submitted_monotone_1
+          theorem bridge_monotone_1 (a b c d : Bool) : cand_monotone_1 a b c d = true → intent_monotone_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_monotone_1
+          def cand_monotone_2 (a b c d : Bool) : Bool := (!(((a && (!b)) || (b && (!c))) || (c && (!d))))
+          def intent_monotone_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_2 : cand_monotone_2 false false false false = true := by decide
+          #print axioms submitted_monotone_2
+          theorem bridge_monotone_2 (a b c d : Bool) : cand_monotone_2 a b c d = true → intent_monotone_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_monotone_2
+          def cand_monotone_3 (a b c d : Bool) : Bool := (((((!a) || b) && ((!b) || c)) && ((!c) || d)) && d)
+          def intent_monotone_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_3 : cand_monotone_3 false false false true = true := by decide
+          #print axioms submitted_monotone_3
+          theorem bridge_monotone_3 (a b c d : Bool) : cand_monotone_3 a b c d = true → intent_monotone_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_monotone_3
+          def cand_monotone_4 (a b c d : Bool) : Bool := (((!a) || b) && ((!c) || d))
+          def intent_monotone_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_4 : cand_monotone_4 false true false false = true := by decide
+          #print axioms submitted_monotone_4
+          theorem mismatch_monotone_4 : cand_monotone_4 false true false false = true ∧ intent_monotone_4 false true false false = false := by decide
+          #print axioms mismatch_monotone_4
+          def cand_monotone_5 (a b c d : Bool) : Bool := ((((!b) || a) && ((!c) || b)) && ((!d) || c))
+          def intent_monotone_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_5 : cand_monotone_5 false false false false = true := by decide
+          #print axioms submitted_monotone_5
+          theorem mismatch_monotone_5 : cand_monotone_5 true false false false = true ∧ intent_monotone_5 true false false false = false := by decide
+          #print axioms mismatch_monotone_5
+          def cand_monotone_6 (a b c d : Bool) : Bool := ((((!a) || b) && ((!b) || c)) && ((!c) || d))
+          def intent_monotone_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_monotone_6 : cand_monotone_6 false false false false = true := by decide
+          #print axioms submitted_monotone_6
+          def cand_encoding_1 (a b c d : Bool) : Bool := ((a == b) && (c == d))
+          def intent_encoding_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_1 : cand_encoding_1 false false false false = true := by decide
+          #print axioms submitted_encoding_1
+          theorem bridge_encoding_1 (a b c d : Bool) : cand_encoding_1 a b c d = true → intent_encoding_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_encoding_1
+          def cand_encoding_2 (a b c d : Bool) : Bool := (!((a != b) || (c != d)))
+          def intent_encoding_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_2 : cand_encoding_2 false false false false = true := by decide
+          #print axioms submitted_encoding_2
+          theorem bridge_encoding_2 (a b c d : Bool) : cand_encoding_2 a b c d = true → intent_encoding_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_encoding_2
+          def cand_encoding_3 (a b c d : Bool) : Bool := (((a == b) && (c == d)) && a)
+          def intent_encoding_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_3 : cand_encoding_3 true true false false = true := by decide
+          #print axioms submitted_encoding_3
+          theorem bridge_encoding_3 (a b c d : Bool) : cand_encoding_3 a b c d = true → intent_encoding_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_encoding_3
+          def cand_encoding_4 (a b c d : Bool) : Bool := (a == b)
+          def intent_encoding_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_4 : cand_encoding_4 false false false true = true := by decide
+          #print axioms submitted_encoding_4
+          theorem mismatch_encoding_4 : cand_encoding_4 false false false true = true ∧ intent_encoding_4 false false false true = false := by decide
+          #print axioms mismatch_encoding_4
+          def cand_encoding_5 (a b c d : Bool) : Bool := ((a == c) && (b == d))
+          def intent_encoding_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_5 : cand_encoding_5 false false false false = true := by decide
+          #print axioms submitted_encoding_5
+          theorem mismatch_encoding_5 : cand_encoding_5 false true false true = true ∧ intent_encoding_5 false true false true = false := by decide
+          #print axioms mismatch_encoding_5
+          def cand_encoding_6 (a b c d : Bool) : Bool := ((a == b) && (c == d))
+          def intent_encoding_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == true) && (d == true)) || ((a == true) && (b == true) && (c == false) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_encoding_6 : cand_encoding_6 false false false false = true := by decide
+          #print axioms submitted_encoding_6
+          def cand_frame_1 (a b c d : Bool) : Bool := ((a == c) && (b == d))
+          def intent_frame_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_1 : cand_frame_1 false false false false = true := by decide
+          #print axioms submitted_frame_1
+          theorem bridge_frame_1 (a b c d : Bool) : cand_frame_1 a b c d = true → intent_frame_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_frame_1
+          def cand_frame_2 (a b c d : Bool) : Bool := (!((a != c) || (b != d)))
+          def intent_frame_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_2 : cand_frame_2 false false false false = true := by decide
+          #print axioms submitted_frame_2
+          theorem bridge_frame_2 (a b c d : Bool) : cand_frame_2 a b c d = true → intent_frame_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_frame_2
+          def cand_frame_3 (a b c d : Bool) : Bool := (((a == c) && (b == d)) && (!a))
+          def intent_frame_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_3 : cand_frame_3 false false false false = true := by decide
+          #print axioms submitted_frame_3
+          theorem bridge_frame_3 (a b c d : Bool) : cand_frame_3 a b c d = true → intent_frame_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_frame_3
+          def cand_frame_4 (a b c d : Bool) : Bool := ((a == d) && (b == c))
+          def intent_frame_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_4 : cand_frame_4 false true true false = true := by decide
+          #print axioms submitted_frame_4
+          theorem mismatch_frame_4 : cand_frame_4 false true true false = true ∧ intent_frame_4 false true true false = false := by decide
+          #print axioms mismatch_frame_4
+          def cand_frame_5 (a b c d : Bool) : Bool := (a == c)
+          def intent_frame_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_5 : cand_frame_5 false false false false = true := by decide
+          #print axioms submitted_frame_5
+          theorem mismatch_frame_5 : cand_frame_5 false false false true = true ∧ intent_frame_5 false false false true = false := by decide
+          #print axioms mismatch_frame_5
+          def cand_frame_6 (a b c d : Bool) : Bool := ((a == c) && (b == d))
+          def intent_frame_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false)) || ((a == true) && (b == true) && (c == true) && (d == true))
+          theorem submitted_frame_6 : cand_frame_6 false false false false = true := by decide
+          #print axioms submitted_frame_6
+          def cand_exclusive_1 (a b c d : Bool) : Bool := ((!(a && b)) && (!(c && d)))
+          def intent_exclusive_1 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_1 : cand_exclusive_1 false false false false = true := by decide
+          #print axioms submitted_exclusive_1
+          theorem bridge_exclusive_1 (a b c d : Bool) : cand_exclusive_1 a b c d = true → intent_exclusive_1 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_exclusive_1
+          def cand_exclusive_2 (a b c d : Bool) : Bool := (((!a) || (!b)) && ((!c) || (!d)))
+          def intent_exclusive_2 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_2 : cand_exclusive_2 false false false false = true := by decide
+          #print axioms submitted_exclusive_2
+          theorem bridge_exclusive_2 (a b c d : Bool) : cand_exclusive_2 a b c d = true → intent_exclusive_2 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_exclusive_2
+          def cand_exclusive_3 (a b c d : Bool) : Bool := (((!(a && b)) && (!(c && d))) && (!a))
+          def intent_exclusive_3 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_3 : cand_exclusive_3 false false false false = true := by decide
+          #print axioms submitted_exclusive_3
+          theorem bridge_exclusive_3 (a b c d : Bool) : cand_exclusive_3 a b c d = true → intent_exclusive_3 a b c d = true := by
+            cases a <;> cases b <;> cases c <;> cases d <;> decide
+          #print axioms bridge_exclusive_3
+          def cand_exclusive_4 (a b c d : Bool) : Bool := (!(a && b))
+          def intent_exclusive_4 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_4 : cand_exclusive_4 false false true true = true := by decide
+          #print axioms submitted_exclusive_4
+          theorem mismatch_exclusive_4 : cand_exclusive_4 false false true true = true ∧ intent_exclusive_4 false false true true = false := by decide
+          #print axioms mismatch_exclusive_4
+          def cand_exclusive_5 (a b c d : Bool) : Bool := ((!(a && b)) || (!(c && d)))
+          def intent_exclusive_5 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_5 : cand_exclusive_5 false false false false = true := by decide
+          #print axioms submitted_exclusive_5
+          theorem mismatch_exclusive_5 : cand_exclusive_5 false false true true = true ∧ intent_exclusive_5 false false true true = false := by decide
+          #print axioms mismatch_exclusive_5
+          def cand_exclusive_6 (a b c d : Bool) : Bool := ((!(a && b)) && (!(c && d)))
+          def intent_exclusive_6 (a b c d : Bool) : Bool := ((a == false) && (b == false) && (c == false) && (d == false)) || ((a == false) && (b == false) && (c == false) && (d == true)) || ((a == false) && (b == false) && (c == true) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == false)) || ((a == false) && (b == true) && (c == false) && (d == true)) || ((a == false) && (b == true) && (c == true) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == false)) || ((a == true) && (b == false) && (c == false) && (d == true)) || ((a == true) && (b == false) && (c == true) && (d == false))
+          theorem submitted_exclusive_6 : cand_exclusive_6 false false false false = true := by decide
+          #print axioms submitted_exclusive_6
+          end MeaningTrial
+          LEAN
+          echo "909d10ef6c63d1214bad511fc76cf7175f53ebcecf995280f54f66ffdbf7cda4  evidence/MeaningTrial.lean" | sha256sum -c -
+          lean --version | tee evidence/lean-version.txt
+          lean -DwarningAsError=true evidence/MeaningTrial.lean | tee evidence/axioms.log
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text=Path('evidence/axioms.log').read_text()
+          lines=[x for x in text.splitlines() if 'does not depend on any axioms' in x or 'depends on axioms:' in x]
+          assert len(lines)==66, (len(lines),text)
+          for line in lines:
+              if 'depends on axioms:' in line:
+                  names=re.search(r'\[(.*?)\]',line).group(1).split(', ')
+                  assert set(names)<= {'propext','Classical.choice','Quot.sound'}, line
+          assert 'sorryAx' not in text
+          print('36 submitted proofs; 18 transfer implications; 12 mismatch witnesses; 66 axiom profiles')
+          PY
+          sha256sum evidence/* > manifest.sha256
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-assurance-native
+          path: |
+            evidence/
+            manifest.sha256
