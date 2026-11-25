@@ -1,0 +1,58 @@
+name: EIK official score
+on:
+  push:
+    branches: [research/eik-official-score-20261125]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  score:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Acquire pinned evaluator and public former champion
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir -p evidence
+          git rev-parse HEAD | tee evidence/evaluator.sha
+          curl --fail --location --retry 3 https://conjectures.io/v1/competitions/exact-integer-kernels/submissions/48/source -o original.c
+          echo 'c858c54e3e0b07b469d4445028a5ddd7c7ce579932bf42d4575cc3044ef61661  original.c' | sha256sum -c -
+          python - <<'PY'
+          import pathlib,re,hashlib
+          s=pathlib.Path('original.c').read_text()
+          s=s.replace("#define EIK_SEL (L'\\0' - 1 < 0)", "#define EIK_SEL 0")
+          s,n=re.subn(r'if \(\(t_w \* (?:t_w|t_m4)\) == (?:5|13|21|29|37|45|53|61)u\)', 'if (0)', s)
+          assert n==9,n
+          b=s.encode()
+          assert hashlib.sha256(b).hexdigest()=='84c89d02ad0c55ba7d9ac9e70315078494023aac8298ccb897f1f0a369b64e59'
+          pathlib.Path('candidate.c').write_bytes(b)
+          PY
+          sha256sum original.c candidate.c | tee evidence/source.sha256
+      - name: Install official dependencies
+        working-directory: kit
+        run: |
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+      - name: Static gate
+        working-directory: kit
+        run: |
+          set -o pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+      - name: Score using official evaluator
+        working-directory: kit
+        run: |
+          set -o pipefail
+          python -m eik evaluate candidate.c --quick --seed 20261119 --json 2>&1 | tee evidence/evaluate.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-official-score-evidence
+          path: |
+            kit/evidence/
+            kit/results/
