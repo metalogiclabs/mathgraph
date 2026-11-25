@@ -100,7 +100,7 @@ jobs:
             target="$key:openc3/python/openc3/accessors/accessor.py"
             api "api/components/show?component=$target" > "sonar-receipts/$arm-accessor-component.json"
             api "api/sources/raw?key=$target" > "sonar-receipts/$arm-accessor-indexed.py"
-            cmp "$arm/openc3/python/openc3/accessors/accessor.py" "sonar-receipts/$arm-accessor-indexed.py"
+            python3 -c 'import sys,pathlib,json,hashlib; a=pathlib.Path(sys.argv[1]).read_bytes(); b=pathlib.Path(sys.argv[2]).read_bytes(); assert b==a or b==a+b"\n", "Indexed source differs beyond the API terminal LF"; print(json.dumps({"source_sha256":hashlib.sha256(a).hexdigest(),"indexed_sha256":hashlib.sha256(b).hexdigest(),"api_extra_terminal_lf":b!=a}))' "$arm/openc3/python/openc3/accessors/accessor.py" "sonar-receipts/$arm-accessor-indexed.py" > "sonar-receipts/$arm-source-comparison.json"
             page=1
             while true; do
               f="sonar-receipts/$arm-hotspots-$page.json"
