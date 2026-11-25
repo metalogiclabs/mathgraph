@@ -17,3 +17,7 @@ The corrected check accepts only exact bytes or exact bytes plus one terminal LF
 ## Hotspot export API correction
 
 Run 45711086622 validated the original accessor code under the narrow terminal-LF rule and completed its comprehensive scan, then stopped because the hotspot export used the removed projectKey parameter. The server returned an explicit error requiring project or hotspots. The official SearchAction endpoint definition confirms project is the project key and that projectKey was removed in 2026.5. Correct only that export parameter and retain the server's actual hotspot API schema in the next run. Preserve partial artifact 15066679676, SHA-256 c472a0dac80f3ae953ecdfc73203d8a7b800a8ff9dc564b7bee07b7e8f223e96. The comprehensive paired comparison remains UNKNOWN until complete issue exports and both source checks finish.
+
+## Optional schema-probe correction
+
+Run 45711660711 stopped before either scan because the added webservices/show metadata endpoint returned HTTP 404. This was an optional diagnostic probe, not part of analysis or source verification. Remove that unsupported probe; retain the project parameter already verified against Sonar's official endpoint implementation and keep all mandatory findings/source/profile checks. Partial setup artifact 15066459399 has SHA-256 8704d581993b0c2e4e7214ee8cafc2dde23c53426f7ad47e2ad9fa883ae4beb4. This supersedes the promise above to save runtime endpoint metadata; actual issue and hotspot exports remain mandatory. No analyzer setting or source changes.

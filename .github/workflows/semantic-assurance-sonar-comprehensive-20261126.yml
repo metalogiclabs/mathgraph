@@ -61,7 +61,6 @@ jobs:
           echo "::add-mask::$token"
           api() { curl --fail-with-body -sS -u "$token:" "http://127.0.0.1:9000/$1"; }
           api api/plugins/installed > sonar-receipts/plugins.json
-          api 'api/webservices/show?controller=api/hotspots' > sonar-receipts/hotspot-api-schema.json
           api 'api/qualityprofiles/search?language=py' > sonar-receipts/profiles-available.json
           curl --fail-with-body -sS -u "$token:" -X POST http://127.0.0.1:9000/api/qualityprofiles/set_default --data-urlencode language=py --data-urlencode 'qualityProfile=Sonar way comprehensive' >/dev/null
           api 'api/qualityprofiles/search?language=py' > sonar-receipts/python-profiles.json
