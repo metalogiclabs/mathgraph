@@ -1,0 +1,175 @@
+name: EIK paired ARM winner composition
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-arm-compose.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, square-direct, square-two-half, direct-two-half, all-three]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-limb-selected
+          run-id: 45558242385
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Reproduce exact local source
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir evidence
+          cp ../prior/candidate.c baseline.c
+          echo '099c17e7ea81db42254cbcbbf21ec0ca229e29e386d5f9e3abef39fb4629f567  baseline.c' | sha256sum -c -
+          case "$VARIANT" in
+            control) steps="square" ;;
+            square-direct) steps="exp-direct square" ;;
+            square-two-half) steps="square exp-square" ;;
+            direct-two-half) steps="exp-direct exp-square" ;;
+            all-three) steps="exp-direct square exp-square" ;;
+            *) exit 2 ;;
+          esac
+          python ../research/eik/arm_compound.py baseline.c candidate.c $steps
+          python - <<'PY'
+          import os,pathlib,hashlib
+          pins={
+          'control':'cbfc594a7ac0dbc3684b3e5e120886717208251f6a2317269f7e723f6044fc26',
+          'square-direct':'702e1cf8228b97ac915488bcda174cad6393346382b6ee828f5b66a718fc1cf1',
+          'square-two-half':'e3c636c81f6c6f5fe7c56b16f8f21f0b4603816a0efcc0126d22b87b2f806569',
+          'direct-two-half':'88ece76c9493c9e5be6b5d36c56b2e74e52a1949d7f2d97d5999ff69e1ddb9eb',
+          'all-three':'0b02a1ad26d312dc79aa371b24ad43833c04ebc4371d06e9fcf89ecdfbe83ab7'}
+          h=hashlib.sha256(pathlib.Path('candidate.c').read_bytes()).hexdigest()
+          assert h==pins[os.environ['VARIANT']],(h,pins[os.environ['VARIANT']])
+          PY
+          cp candidate.c evidence/
+          sha256sum candidate.c > evidence/source.sha256
+          git rev-parse HEAD > evidence/evaluator.sha
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+      - name: Official static gate, independent samples and paired measurements
+        working-directory: kit
+        run: |
+          set -euxo pipefail
+          python -m eik check candidate.c 2>&1 | tee evidence/check.log
+          python -m eik measure candidate.c --seed 20261125 --out evidence/measure.json
+          python -m eik measure candidate.c --seed 20261208 --out evidence/heldout.json
+          cat evidence/measure.json
+          cat evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-arm-compose-${{ matrix.variant }}
+          path: kit/evidence/
+  reconcile:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    outputs:
+      qualify: ${{ steps.decision.outputs.qualify }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eik-arm-compose-*
+          path: runs
+      - id: decision
+        name: Compare matched seeds; no composition of failed transformations
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          python - <<'PY'
+          import pathlib,json,hashlib,os
+          result={};admitted={}
+          for d in sorted(pathlib.Path('runs').glob('eik-arm-compose-*')):
+              v=d.name.removeprefix('eik-arm-compose-')
+              try:
+                  a,b=[json.loads((d/f).read_text()) for f in ['measure.json','heldout.json']]
+                  h=hashlib.sha256((d/'candidate.c').read_bytes()).hexdigest()
+                  assert a['sha256']==b['sha256']==h and a['verdict']==b['verdict']=='passed'
+                  result[v]={t:{'discovery':a['scores'][t]['S'],'heldout':b['scores'][t]['S'],'bytes':a['scores'][t].get('bytes')} for t in ['rv32im','thumbv6m','thumbv7em','overall']}
+                  admitted[v]=(a,b,d)
+              except Exception as e:result[v]={'not_admitted':repr(e)}
+          assert 'control' in admitted
+          c=admitted['control']
+          for v,(a,b,d) in admitted.items():
+              for r,ctrl in zip((a,b),c[:2]):
+                  assert r['inputs_sha256']==ctrl['inputs_sha256'] and r['fingerprint']['measurement']==ctrl['fingerprint']['measurement']
+          boards=['rv32im','thumbv6m','overall']
+          score=lambda v,i,t:admitted[v][i]['scores'][t]['S']
+          gain=lambda v,t:min(1-score(v,i,t)/score('control',i,t) for i in [0,1])
+          winners={t:[v for v in admitted if v!='control' and gain(v,t)>0] for t in boards}
+          best_by_board={t:max(winners[t],key=lambda v:gain(v,t)) if winners[t] else 'control' for t in boards}
+          # This experiment is ARM-specific. Require paired improvement over the
+          # already qualified ARM control; no claim of live takeover.
+          eligible=[(v,'thumbv6m') for v in winners['thumbv6m'] if gain(v,'thumbv6m')>=0.005]
+          best,board=max(eligible,key=lambda p:gain(*p)) if eligible else ('control',None)
+          qualifies=bool(eligible)
+          pathlib.Path('evidence/candidate.c').write_bytes((admitted[best][2]/'candidate.c').read_bytes())
+          pathlib.Path('evidence/decision.json').write_text(json.dumps({'results':result,'paired_winners':winners,'best_by_board':best_by_board,'selected':best,'selected_board':board,'qualify':qualifies},indent=2))
+          print(json.dumps(result,indent=2));print('paired winners',winners,'best',best_by_board,'qualification trigger',qualifies,best,board)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('qualify='+str(qualifies).lower()+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-arm-compose-selected
+          path: evidence/
+  qualify:
+    needs: reconcile
+    if: needs.reconcile.outputs.qualify == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [sigmoid,tanh,exp]
+        target: [host,rv32im,thumbv6m,thumbv7em]
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-arm-compose-selected
+          path: selected
+      - name: Complete independent qualification
+        env:
+          FN: ${{ matrix.function }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp ../selected/candidate.c .
+          mkdir evidence
+          sha256sum candidate.c > evidence/source.sha256
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          if [ "$TARGET" = host ]; then
+            python -m eik fullcheck candidate.c --function "$FN" --out evidence/report.json
+          else
+            sudo apt-get update
+            sudo apt-get install -y qemu-user
+            python -m eik targetcheck candidate.c --function "$FN" --target "$TARGET" --out evidence/report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-arm-compose-full-${{ matrix.function }}-${{ matrix.target }}
+          path: kit/evidence/
