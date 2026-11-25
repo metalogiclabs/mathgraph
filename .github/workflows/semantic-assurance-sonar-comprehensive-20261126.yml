@@ -61,6 +61,7 @@ jobs:
           echo "::add-mask::$token"
           api() { curl --fail-with-body -sS -u "$token:" "http://127.0.0.1:9000/$1"; }
           api api/plugins/installed > sonar-receipts/plugins.json
+          api 'api/webservices/show?controller=api/hotspots' > sonar-receipts/hotspot-api-schema.json
           api 'api/qualityprofiles/search?language=py' > sonar-receipts/profiles-available.json
           curl --fail-with-body -sS -u "$token:" -X POST http://127.0.0.1:9000/api/qualityprofiles/set_default --data-urlencode language=py --data-urlencode 'qualityProfile=Sonar way comprehensive' >/dev/null
           api 'api/qualityprofiles/search?language=py' > sonar-receipts/python-profiles.json
@@ -104,7 +105,7 @@ jobs:
             page=1
             while true; do
               f="sonar-receipts/$arm-hotspots-$page.json"
-              api "api/hotspots/search?projectKey=$key&ps=100&p=$page" > "$f"
+              api "api/hotspots/search?project=$key&ps=100&p=$page" > "$f"
               total="$(jq -er '.paging.total' "$f")"
               if (( page * 100 >= total )); then break; fi
               page=$((page+1))
