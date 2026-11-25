@@ -1,0 +1,26 @@
+{
+ "bytes": {
+  "rv32im": 20528,
+  "thumbv6m": 20120,
+  "thumbv7em": 20820
+ },
+ "competition": "exact-integer-kernels",
+ "fingerprint": {
+  "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
+  "sandbox": "none",
+  "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc"
+ },
+ "kind": "gate",
+ "normalised_sha256": "b7519ef76e83849a6032b4f39b13211e8b4d6666060762f96e95328138b0cf86",
+ "reasons": [],
+ "schema": "eik-report-1",
+ "sha256": "55ff8fed4dcfa346f6e227c0bdcbc98c8bd71f685dc55b448f15c2020b7d236c",
+ "source_bytes": 168543,
+ "stack_bound": {
+  "rv32im": 192,
+  "thumbv6m": 352,
+  "thumbv7em": 296
+ },
+ "stage": null,
+ "verdict": "accepted"
+}

@@ -1,0 +1,26 @@
+{
+ "budget_seconds": 122880,
+ "chunk_hi": 4096,
+ "chunk_lo": 0,
+ "competition": "exact-integer-kernels",
+ "complete": true,
+ "examples": [],
+ "exit": 0,
+ "fingerprint": {
+  "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
+  "sandbox": "none",
+  "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc"
+ },
+ "function": "sigmoid",
+ "kind": "fullcheck",
+ "mismatches": 0,
+ "quick": false,
+ "range_complete": true,
+ "reasons": [],
+ "schema": "eik-report-1",
+ "seconds": 181.5,
+ "sha256": "55ff8fed4dcfa346f6e227c0bdcbc98c8bd71f685dc55b448f15c2020b7d236c",
+ "stage": null,
+ "verdict": "passed",
+ "words_checked": 4294967296
+}
