@@ -1,0 +1,123 @@
+name: EIK public frontier refresh
+on:
+  push:
+    branches: [research/eik-rrr-optimization-20261125]
+    paths: ['.github/workflows/eik-public-frontier.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.inventory.outputs.matrix }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: inventory
+        name: Fetch live public competition records
+        run: |
+          mkdir -p evidence/sources
+          python - <<'PY'
+          import urllib.request, urllib.error, json, pathlib, hashlib, os, re
+          base='https://conjectures.io/v1/competitions/exact-integer-kernels'
+          p=pathlib.Path('evidence')
+          def get(path):
+              with urllib.request.urlopen(base+path,timeout=30) as r: return r.read()
+          def save(path,name):
+              try:
+                  b=get(path); (p/name).write_bytes(b); return json.loads(b)
+              except Exception as e:
+                  print(path,type(e).__name__,str(e)); return None
+          boards=save('/boards','boards.json')
+          assert boards and boards.get('boards')
+          ids=set()
+          records=[]
+          # Only normal, public records and published source downloads.
+          for board in ['rv32im','overall','thumbv6m']:
+              d=save('/leaderboard?board='+board,'leaderboard-'+board+'.json')
+              if d is not None:
+                  print(board,json.dumps(d)[:16000])
+              def visit(x):
+                  if isinstance(x,dict):
+                      for k,v in x.items():
+                          if k in ('submission_id','submission') and isinstance(v,int): ids.add(v)
+                          elif k in ('submission','entry') and isinstance(v,dict):
+                              for j in ('id','submission_id'):
+                                  if isinstance(v.get(j),int):ids.add(v[j])
+                          visit(v)
+                  elif isinstance(x,list):
+                      for v in x:visit(v)
+              visit(d)
+          print('public record submission IDs',sorted(ids,reverse=True))
+          # #48 is our historical published source. #50 and #52 are previously
+          # observed champions; try their public release endpoints only.
+          ids.update([48,50,52])
+          for i in sorted(ids,reverse=True)[:30]:
+              try:
+                  status=save('/submissions/'+str(i),'submission-'+str(i)+'.json')
+                  report=save('/submissions/'+str(i)+'/report','report-'+str(i)+'.json')
+                  b=get('/submissions/'+str(i)+'/source')
+                  s=b.decode('utf-8')
+                  if len(b)>262144 or not all(re.search(r'\beik_'+f+r'\s*\(',s) for f in ['sigmoid','tanh','exp']):
+                      print('not C source',i);continue
+                  (p/'sources'/f'{i}.c').write_bytes(b)
+                  rec={'id':i,'sha256':hashlib.sha256(b).hexdigest(),'bytes':len(b)}
+                  records.append(rec);print('published source',rec)
+                  if len(records)>=6:break
+              except (urllib.error.HTTPError,urllib.error.URLError,UnicodeError) as e:
+                  print('not publicly downloadable',i,str(e))
+          (p/'sources.json').write_text(json.dumps(records,indent=2))
+          # Evaluate only public released sources as-is, not as new submissions.
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('matrix='+json.dumps([str(r['id']) for r in records] or ['none'])+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-frontier-public-records
+          path: evidence/
+  measure:
+    needs: inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        entry: ${{ fromJSON(needs.inventory.outputs.matrix) }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-frontier-public-records
+          path: public
+      - name: Evaluate unchanged former champion
+        env:
+          ENTRY: ${{ matrix.entry }}
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          if [ "$ENTRY" = none ]; then echo "No public sources" > evidence/outcome; exit 0; fi
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          cd kit
+          git checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          cp "../public/sources/$ENTRY.c" candidate.c
+          cp candidate.c ../evidence/
+          sha256sum candidate.c > ../evidence/source.sha256
+          git rev-parse HEAD > ../evidence/evaluator.sha
+          pip install --require-hashes -r requirements.txt
+          python -m eik setup
+          python -m eik check candidate.c 2>&1 | tee ../evidence/check.log
+          python -m eik measure candidate.c --seed 20261125 --out ../evidence/measure.json
+          cat ../evidence/measure.json
+          python -m eik measure candidate.c --seed 20261128 --out ../evidence/heldout.json
+          cat ../evidence/heldout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-frontier-entry-${{ matrix.entry }}
+          path: evidence/
