@@ -1,0 +1,1338 @@
+{
+  "source": {
+    "repository": "nasa-jpl/PropertyKindCalculus",
+    "commit": "97153d3fad3cb8e5e018d2df5f7aeb4a406ff7e4",
+    "torchlean": "65aec783e51f7961660971651060d03fdffebf05"
+  },
+  "inventory": {
+    "method": "regex extraction, not kernel environment harvest; review completeness of annotations separately",
+    "files": [
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/Catalogue.lean",
+        "blob": "5725618a3d2b172025d060a27d24d08981650793"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/Annotations.lean",
+        "blob": "6a4f7b346e5b16354814e6918fad17ef9be2ba89"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/DimensionAnnotations.lean",
+        "blob": "134cb83660dba4ae18fd3865d0e65f92836b4a1e"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/ExampleAnnotations.lean",
+        "blob": "d45ed9349de741216a65c6b8968b38f19b553f46"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/ForPhysLibAnnotations.lean",
+        "blob": "076a6ca2c9eb0fa36838b256ffc2f4b9021fe4dd"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/RenderingAnnotations.lean",
+        "blob": "851362857eacebd4ab8cab6f1aa485a635f43451"
+      },
+      {
+        "path": "requirements/PropertyKindCalculus/Requirements/UncertaintyAnnotations.lean",
+        "blob": "028bc812a6b95f8b4550fee4d2683286370d5002"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "R1",
+        "kind": "verifiable",
+        "title": "Kinds are first-class and discriminate within a dimension",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "KindOfProperty",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "dim_not_injective",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Dedicated.vwc",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R2",
+        "kind": "verifiable",
+        "title": "Specialization is a lattice, with comparability but not identity",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Specializes",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Specializes.trans",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "MutuallyComparable",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "ExaminationPrinciple",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "KindOfProperty.distinct_of_examPrinciple",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity.widen",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.widen_widen",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity.addAt",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity.leAt",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "KindJoin",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "KindJoin.comparable",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.width",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.HarmonicOscillator.Scorecard.mr32_attempt4_swept",
+            "file": "ForPhysLibAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R3",
+        "kind": "expressiveness",
+        "title": "General versus individual is type versus term",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "KindOfProperty",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.pencilWidth",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R19",
+        "kind": "expressiveness",
+        "title": "A quantity characterizes an object; object identity is carried in the type",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "IndividualQuantity",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "DedicatedKind.distinct_of_sort",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Dedicated.wc1",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R22",
+        "kind": "verifiable",
+        "title": "A quantity is dedicated to a named component of a named system; dedications of distinct systems are provably distinct, so a part-quantity of one system cannot stand in for a part-quantity of another",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "DedicatedKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "DedicatedKind.distinct_of_sort",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.HarmonicOscillator.Attempt4.no_dilemma",
+            "file": "ForPhysLibAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R4",
+        "kind": "verifiable",
+        "title": "Operations are gated by kind (the additive law)",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "implements",
+            "declaration": "Quantity.add",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.laws_parametric",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.MiniQuantity.lenA",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R5",
+        "kind": "verifiable",
+        "title": "The interaction algebra is a partial, typed, ternary product",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "InteractionAlgebra",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "InteractionAlgebra.KDiv",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "InteractionAlgebra.kMul_iff_kDiv",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "torque_angle_work",
+            "file": "DimensionAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R6",
+        "kind": "verifiable",
+        "title": "Operator availability is gated by scale, monotonically",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "ScaleType",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "ScaleType.allows_mono",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Value.bloodGroup",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R7",
+        "kind": "verifiable",
+        "title": "Dimension certifies coherence; it does not decide legality",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "DimensionedKind.toDimension",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "InteractionAlgebra.dim_homomorphism",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "Dim.torque_eq_energy",
+            "file": "DimensionAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R8",
+        "kind": "expressiveness",
+        "title": "Units are chosen values of a kind",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "MetrologicalUnit",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Unit.centimetre",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R16",
+        "kind": "verifiable",
+        "title": "Unit references are faithful: commensurability is an equivalence and the number-and-reference form round-trips",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "MetrologicalUnit.Commensurable",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "MetrologicalUnit.Commensurable.refl",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "MetrologicalUnit.Commensurable.symm",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "MetrologicalUnit.Commensurable.trans",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "MetrologicalUnit.measure",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "MetrologicalUnit.measure_numeral",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "MetrologicalUnit.measure_eq_of_measures",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Unit.fiveCm",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R17",
+        "kind": "verifiable",
+        "title": "Unit conversion between commensurable units is a faithful round-trip (an exact, reciprocal power-of-radix factor — SI decimal or IEC binary)",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "SIPrefix",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "BinaryPrefix",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "PrefixedUnit",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "PrefixedUnit.conversionExponent",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "PrefixedUnit.shift_add_symm",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "PrefixedUnit.convertExp_roundtrip",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "PrefixedUnit.realFactor",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "PrefixedUnit.convertReal_roundtrip",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.UnitConversion.cm_km_real_roundtrip",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.UnitConversion.kib_mib_real_roundtrip",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "RealUnit",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "RealUnit.ofNumber_measure",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "RealUnit.ratio_mul_ratio_symm",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Unit.cm_km_roundtrip",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Unit.kib_mib_roundtrip",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R9",
+        "kind": "verifiable",
+        "title": "Extensive quantities aggregate additively over parts; intensive ones do not",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Extensive",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "extensive_additive",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "mixing_subadditive",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Intensive",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "intensive_uniform",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "not_extensive_of_intensive",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "WholeProper",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "assemble_ne_measured",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "ExtensiveAbout",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Transports",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "extensiveAbout_mixed",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "extensiveAbout_mixed_ne",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Recarving",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Recarving.leafSum_invariant",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "countMeasurement",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "coalesce_count_ne",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "WeightedCarving",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "WeightedCarving.mean",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "WeightedCarving.mk?",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "WeightedCarving.mk?_eq_none_iff",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "WeightedCarvingQ",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "WeightedCarvingQ.mean",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "WeightedCarvingQ.mean_magnitude",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "WeightedCarving.mean_const",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "parallelAxis",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.MiniExtensivity.mass_extensive",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "QuasiExtensive",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "quasiExtensive_leafSum",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "extensive_iff_quasiExtensive_zero",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "mixing_not_quasiExtensive",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R10",
+        "kind": "verifiable",
+        "title": "A quantity value is parametric in its numeric representation type",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Carrier",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "LawfulCarrier",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "CarrierRefinement",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.add_refines",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "MulRefinement",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "DivRefinement",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.mul_refines",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.div_refines",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "WeightedCarvingQ.mean_div_refines",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.MiniQuantity.lenF",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Adequacy.RefinementFixes",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.refinementFixes_iff_exactRepresentable",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R11",
+        "kind": "verifiable",
+        "title": "Units are scalar; a vector quantity is a numerical array times one scalar unit",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "implements",
+            "declaration": "instCarrierPi",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "instLawfulCarrierPi",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.MiniVectorQuantity.vector_add_comm",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.MiniVectorQuantity.doubled_east",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R20",
+        "kind": "verifiable",
+        "title": "A vector quantity's numbers are coefficients in a chosen basis, so a reading is indexed by that basis and by the law its coefficients obey when the basis changes; readings in different bases do not combine, the change acts functorially, and a contraction of two readings is basis-independent while each coefficient separately is not",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Frame",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Variance",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "InFrame",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "FrameChange.IsOrthonormal",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "toFrameVector_id",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "toFrameVector_comp",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "dot_toFrameVector",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "component_not_invariant",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "ScalarCarrier",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.DimensionExamples.Frames.contraction_invariant",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.DimensionExamples.Frames.component_moves",
+            "file": "DimensionAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R12",
+        "kind": "verifiable",
+        "title": "A classification is a certificate, not an assertion",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "ProductKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "QuotientKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "ReciprocalKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Quantity.IsProduct",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Quantity.mul_isProduct",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Classification.length_is_speed_times_time",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.Classification.d",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R13",
+        "kind": "verifiable",
+        "title": "Unit classification needs a third category: scale-spanning units",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "LevelKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "PowerRole",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "LevelKind.toKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "LevelKind.toKind_not_allowsDifference",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "LevelKind.gainKind_ref_irrelevant",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "LevelKind.sub",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "LevelKind.combineEnergetic",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "UnitCategory",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "ScaleSpanningUnit",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Dimension.MechanicallyReducible",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "ScaleSpanning.scaleSpanning_not_determined_by_dimension",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "ScaleSpanning.kelvin_reduction_invisible_to_dimension",
+            "file": "DimensionAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "ScaleSpanning.ampere_is_physicalBase",
+            "file": "DimensionAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R14",
+        "kind": "verifiable",
+        "title": "Output uncertainty is computed by a provably nested ladder of methods",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Cumulants",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "gumStdUnc",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "willinkCombine",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "willinkCumulants_cons",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "willinkCumulants_kappa2",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "gum_eq_willink_of_normal",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.LadderNesting.normalTerms",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R15",
+        "kind": "verifiable",
+        "title": "A floating-point representation is numerically adequate iff it loses no information at the scale of the input uncertainties",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "AdequacyReport",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "Adequacy",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.verdict_sound",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.relUnc_amplifies",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.AdequacyLadder.a1_absorb",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.AdequacyLadder.a3_verdict_sound",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.AdequacyLadder.a2_relunc",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Adequacy.meanExpr",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.mean_fp32_within_errBound",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.regular_meanExpr",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Adequacy.specCarving",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Adequacy.ExactRepresentable",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.flagFree_iff_exactRepresentable",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.round32_eq_self_iff",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.AdequacyDag.doubling_box_exact",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Adequacy.toSpec_box_exact",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R18",
+        "kind": "verifiable",
+        "title": "The recorded variance certifies a coverage interval: distribution-free (Chebyshev ≥ 1 − 1/k²), exact for bounded families",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Coverage.stdUnc",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Coverage.coverageBound",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Coverage.coverageBound_stdUnc",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Coverage.uniform_coverage_exact",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.Coverage.central_half_coverage",
+            "file": "UncertaintyAnnotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "join_within_tolerance",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R21",
+        "kind": "verifiable",
+        "title": "The kind layer erases: the kinded authoring computes exactly the bare-carrier value, and the operator-table form elaborates to the same term as the longhand form — the ceremony is pure",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "KindMul",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "KindDiv",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "OperatorTable.hmul_eq_mul",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "OperatorTable.hdiv_eq_div",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.HarmonicOscillator.Scorecard.mr11_pkc_same_value",
+            "file": "ForPhysLibAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.HarmonicOscillator.Scorecard.mr11_operators_same_term",
+            "file": "ForPhysLibAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R25",
+        "kind": "expressiveness",
+        "title": "A kinded definition renders back as typeset mathematics from its own elaborated source, with the kind bookkeeping suppressed",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.Examples.DocGenMathDemo.avsForward",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "MathTerm",
+            "file": "RenderingAnnotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "prettyEquation",
+            "file": "RenderingAnnotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "pkcMathUses",
+            "file": "RenderingAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R23",
+        "kind": "expressiveness",
+        "title": "A value's provenance is recordable and auditable: a kind-typed value-flow graph with a declared boundary contract, checked against what the scope actually computes",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Provenance",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Provenance.Contract",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "Provenance.wellFormed",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "Provenance.Contract.discharges",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.WaterCloudModel.wcmBoundary",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R24",
+        "kind": "expressiveness",
+        "title": "An audit is a claim about its scope, never about the library: the unkinded surface of a scope is enumerable, and a blessed scope only grows",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "BoundaryAudit.BoundaryTier",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "BoundaryAudit.boundarySites",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindLedger.ledgerOf",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "ForPhysLib.ClassicalMechanics.Audits.interiorScope",
+            "file": "ForPhysLibAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "ForPhysLib.ClassicalMechanics.Audits.ingestBoundary",
+            "file": "ForPhysLibAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R26",
+        "kind": "expressiveness",
+        "title": "A module's behavior is a checked measurement model: a declared boundary carries relation edges whose witnesses are kernel-checked theorems, every relation kind has a conclusion-shape check, a bound names a kinded tolerance, and every rung beyond the witness's own is answered for by a named repair or restatement",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Provenance.Relation",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Provenance.RelationLicense",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindIncidence.checkRelation",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindIncidence.checkDeciders",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "PropertyKindCalculus.UncertaintyExamples.WaterCloudModel.retrievalInvertsForward",
+            "file": "UncertaintyAnnotations"
+          }
+        ]
+      },
+      {
+        "id": "R27",
+        "kind": "verifiable",
+        "title": "A module's distribution is licensed by declared extensivity: output ports carry aggregation classes, and recarving or sharding a batch axis is licensed by theorem from those declarations, with the quasi-extensive tolerance tied to the rounding budget where the carrier demands it",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Provenance.AggregationClass",
+            "file": "Annotations"
+          },
+          {
+            "role": "proves",
+            "declaration": "Recarving.distribution_license",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindIncidence.checkAggregations",
+            "file": "Annotations"
+          }
+        ]
+      },
+      {
+        "id": "R28",
+        "kind": "expressiveness",
+        "title": "A module's requirements are stated with their evidence: every produced port of a model boundary is governed by a requirement or exempted with a reason; a provable requirement's witness is a sorry-free theorem or theorem edge naming no referent, with spot checks evaluated where the model runs; an empirical requirement names marked referents and a gate mentioning one; and an attestation never stands beside a discharge",
+        "review": "UNKNOWN: source inventory only",
+        "references": [
+          {
+            "role": "specifies",
+            "declaration": "Provenance.Requirement",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Provenance.RequirementKind",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Provenance.RequirementScope",
+            "file": "Annotations"
+          },
+          {
+            "role": "specifies",
+            "declaration": "Provenance.BoundaryRole",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindRequirement.checkRequirement",
+            "file": "Annotations"
+          },
+          {
+            "role": "implements",
+            "declaration": "KindRequirement.coverageRows",
+            "file": "Annotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "Tutorial.HarmonicOscillator.hp1",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "Tutorial.HarmonicOscillator.hp6",
+            "file": "ExampleAnnotations"
+          },
+          {
+            "role": "exemplifies",
+            "declaration": "Tutorial.HarmonicOscillator.he5",
+            "file": "ExampleAnnotations"
+          }
+        ]
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "A",
+      "status": "WARRANTED bounded native numerical comparison",
+      "run": 45532422248,
+      "job": 138930738950,
+      "commit": "19b47720044526184bd3061ca642fc44bdeca2e9",
+      "artifact": 14985134621,
+      "digest": "sha256:0c64e08b4fb24895dd4bc04bbcbf658212e41d66cc30bc7f80063af4aef6acb2",
+      "before": 124,
+      "after": 132,
+      "total": 132,
+      "limit": "Numeric equality, not signed-zero bits; no broad regressions. Existing TorchLean backwardDenseAll and agreement theorem are prior work."
+    },
+    {
+      "id": "B",
+      "status": "WARRANTED metadata behavior; not a refutation of existing requirements",
+      "run": 45533439112,
+      "job": 138934142159,
+      "commit": "293d615b2e41110e2253308b685c111a48924ce9",
+      "artifact": 14984714561,
+      "digest": "sha256:66929ad45eb049ad25d0ec64d84c34cda693c0c2130cc0726697f308aafdf882",
+      "limit": "Catalogue attribute, not model-boundary R28 gate. Semantic relevance not automated. Prior failed probe 45532549939 was elaboration failure."
+    },
+    {
+      "id": "C",
+      "status": "WARRANTED concrete clean report witness for proposed perturbation observation",
+      "run": 45532760201,
+      "job": 138931875874,
+      "commit": "c0faf3d88b36ff99deb430d88775432dafd0e9ca",
+      "artifact": 14986116257,
+      "digest": "sha256:8319f120b2937f8d4cc7b04564998d7f110936931857949c653fd343e1d19bd6",
+      "limit": "Clean report completeness explicitly not certified; local soundness not refuted. Perturbation rounds at input; test direct sum perturbation separately."
+    }
+  ],
+  "archiveVerification": "GitHub metadata and logs inspected; bytes not independently verified",
+  "generalization": "CANDIDATE: find q-fiber collisions distinguished by contract observations; factorization is established mathematics; autonomous discovery and transfer untested"
+}
