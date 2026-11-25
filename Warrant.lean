@@ -23,7 +23,7 @@ theorem refinement_minimal {S T V U : Type} (q : S → T) (w : S → V)
     (r : S → U) (hq : Adequate r q) (hw : Adequate r w) :
     Adequate r (fun x => (q x, w x)) := by
   intro x y e
-  rw [hq x y e, hw x y e]
+  exact Prod.ext (hq x y e) (hw x y e)
 
 theorem compose {S T U V : Type} (q : S → T) (r : T → U)
     (w : T → V) (h : Adequate r w) :
