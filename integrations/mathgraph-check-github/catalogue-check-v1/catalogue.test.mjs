@@ -4,11 +4,14 @@ import {CATALOGUE,PROFILES,coverageFor,validateCatalogue} from './catalogue.mjs'
 
 const records=status=>Object.fromEntries(PROFILES.map(p=>[p.id,{status,reason:null,base:{cases:2,mismatches:0},head:{cases:2,mismatches:0}}]));
 
-test('catalogue provenance uses a public immutable snapshot without private account links',()=>{
- assert.match(CATALOGUE.source.url,/^https:\/\/github\.com\/metalogiclabs\/mathgraph\/blob\/[a-f0-9]{40}\/integrations\/mathgraph-check-github\/catalogue-check-v1\/catalogue\.json$/);
- assert.match(CATALOGUE.source.sha256,/^[a-f0-9]{64}$/);
+test('the public catalogue is self-contained without private drafting provenance',()=>{
+ assert.equal(CATALOGUE.source.kind,'EDITORIAL_RESEARCH_CATALOGUE');
+ assert.equal(CATALOGUE.source.path,'integrations/mathgraph-check-github/catalogue-check-v1/catalogue.json');
+ assert.equal(CATALOGUE.source.executable_mapping,'catalogue.mjs');
+ assert.equal('url' in CATALOGUE.source,false);
+ assert.equal('manuscript_origin' in CATALOGUE.source,false);
  assert.doesNotMatch(JSON.stringify(CATALOGUE),/chatgpt\.com\/library|account_id=|libfile_/);
- assert.equal(CATALOGUE.source.manuscript_origin.sha256,'af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe');
+ assert.doesNotMatch(JSON.stringify(CATALOGUE.source),/https?:\/\/|58ddb19|074ddb7|\.md/);
 });
 
 test('the canonical 104 prompts keep stable IDs and candidate status',()=>{

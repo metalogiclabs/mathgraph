@@ -84,7 +84,7 @@ export function renderReport(r){
   '**104 candidate prompts accounted for. Whole-family coverage remains unestablished.**','',
   `Run: **${r.status}**. Profiles: ${r.profile_counts.agreement} bounded agreement, ${r.profile_counts.discrepancy} with discrepancies, ${r.profile_counts.unknown} UNKNOWN, ${r.profile_counts.not_run} NOT_RUN.`,
   '',`${r.coverage.counts.mapped_prompts} prompts have a mapped finite obligation; ${r.coverage.counts.unsupported_by_this_command} have no executable connected to this command. A mapping is not a complete detector.`,
-  '',`Catalogue: ${CATALOGUE.revision}. [Canonical source](${CATALOGUE.source.url}).`,'',
+  '',`Catalogue: ${CATALOGUE.revision}. Canonical source: ${CATALOGUE.source.path}. Its SHA-256 is recorded in result.json.`,'',
   '## Exact source','',`- Base: \`${r.subjects?.base??'unavailable'}\`.`,`- Head: \`${r.subjects?.head??'unavailable'}\`.`,
   '', 'Revisions are resolved once from local Git. Each profile reexecutes its selected source; no previous verdict is reused.',
   '', '## Retained checks','','| Profile | Result | Base discrepancies / cases | Head discrepancies / cases | Evidence |','| --- | --- | --- | --- | --- |'];

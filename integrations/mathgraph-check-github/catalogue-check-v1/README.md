@@ -45,14 +45,16 @@ general failure recovery and complete catalogue coverage are not established.
 ## What the 104 rows mean
 
 `catalogue.json` preserves the stable IDs, names and prompts of revision
-**2026-11-26-r3**. This publication correction retitles item 104 from `Value` to
+**2026-11-26-r4**. The r3 publication correction retitled item 104 from `Value` to
 `Assurance value`, distinguishing measured assurance benefit from item 4's
 governing `Values`. IDs, prompt texts, groups and finite mappings are unchanged.
-Its source points to an immutable public predecessor JSON
-snapshot and records that snapshot's SHA-256. The private manuscript's filename,
-version and digest remain as historical origin metadata, without an account link.
-The public snapshot reproduces all 104 prompts; the private manuscript's broader
-crosswalk and evidence annotations are not included or newly qualified here.
+This public file is the complete editorial candidate catalogue, developed during
+MathGraph assurance research with AI assistance. It is not an established
+literature-derived taxonomy. Revision r4 removes private drafting metadata and
+the backward provenance link to a historical snapshot. No private file is needed
+to inspect the prompts or reproduce the five profiles. Run receipts identify
+the exact verifier commit and catalogue digest; historical revisions are not
+changed by this correction.
 Every entry remains `CANDIDATE_PROMPT`. The executable mappings in `catalogue.mjs`
 are editorial connections to finite obligations and may overlap.
 

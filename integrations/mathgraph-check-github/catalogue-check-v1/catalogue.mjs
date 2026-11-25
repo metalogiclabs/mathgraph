@@ -8,10 +8,10 @@ import refusalCases from '../retained-suite-v1/refusal-cases.json' with {type:'j
 
 import {AXIOM_CASES} from './axiom-admission.mjs';
 
-export const CATALOGUE_SHA256='f8fad3747ed2360fdf5528861bffb8d7c1188bd77af7ef9abd69a00cdac3144b';
+export const CATALOGUE_SHA256='c77b1e00197fe143573e8678e4e84653066c43108930e0a1dd438e0426c69d6f';
 const digest=x=>createHash('sha256').update(x).digest('hex');
 export function validateCatalogue(value){
- if(value?.revision!=='2026-11-26-r3'||value.items?.length!==104||
+ if(value?.revision!=='2026-11-26-r4'||value.items?.length!==104||
   value.items.some((x,i)=>x.id!==i+1))throw Error('CATALOGUE_IDS_OR_REVISION_CHANGED');
  if(value.items.some(x=>!x.title||!x.prompt||x.lifecycle!=='CANDIDATE_PROMPT'))throw Error('CATALOGUE_PROMPTS_INVALID');
  return value;
