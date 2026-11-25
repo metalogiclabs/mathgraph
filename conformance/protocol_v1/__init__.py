@@ -1,1 +1,0 @@
-"""Independent protocol conformance package."""

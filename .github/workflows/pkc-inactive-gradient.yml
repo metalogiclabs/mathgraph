@@ -1,0 +1,40 @@
+name: PKC pinned inactive gradient probe
+on:
+  push:
+    branches: ['experiment/pkc-inactive-gradient-20261125']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact source
+        run: |
+          git clone https://github.com/nasa-jpl/PropertyKindCalculus.git pkc
+          git -C pkc checkout --detach 97153d3fad3cb8e5e018d2df5f7aeb4a406ff7e4
+          cp Probe.lean pkc/Probe.lean
+      - name: Install Lean
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build and execute
+        working-directory: pkc
+        run: |
+          set -eo pipefail
+          lean --version
+          lake exe cache get || true
+          lake build +PropertyKindCalculus.Uncertainty.Sensitivity
+          git -C .lake/packages/TorchLean rev-parse HEAD | tee dependency.txt
+          test "$(cat dependency.txt)" = 65aec783e51f7961660971651060d03fdffebf05
+          lake env lean --run Probe.lean | tee probe.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pkc-inactive-gradient-evidence
+          path: |
+            pkc/Probe.lean
+            pkc/probe.txt
+            pkc/dependency.txt
+            pkc/lake-manifest.json

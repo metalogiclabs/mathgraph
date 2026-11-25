@@ -1,6 +1,0 @@
-node_modules/
-.astro/
-dist/
-.vercel/
-coverage/
-*.log

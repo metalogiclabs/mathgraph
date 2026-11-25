@@ -1,5 +1,0 @@
-component,selected,reason,marginal_gain,support,advisory_only,can_promote_truth
-baseline,True,baseline finite constructor search is always retained,0.0,269,True,False
-lawbook,True,non-negative held-out evidence with sufficient support,1.0,270,True,False
-microbasin,True,non-negative held-out evidence with sufficient support,7.0,277,True,False
-repair,False,negative held-out marginal contribution,-241.0,36,True,False
