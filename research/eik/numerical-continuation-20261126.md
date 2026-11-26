@@ -105,9 +105,19 @@ The smaller `fallback_phase_replay.py` projection preserves one complete
 9,222 disagreements; its full-evaluator fallback produces zero. A fixed
 RV32IM case corroborates both results. This projection is a regression fixture
 selected after the failure, and its instruction counts are not contender
-scores. An independent hosted replay is tracked by
-`.github/workflows/eik-fallback-phase-20261126.yml`; until the actual run is
-inspected, only the local results above are claimed.
+scores. Independent hosted [run 45745450707](https://github.com/metalogiclabs/mathgraph/actions/runs/45745450707)
+passed at source `41c240240af9a722a391283956776395fc56d261`, tree
+`b92c5aade7f66a19d4021ad9c557ebcf97a923ba`. Its actual job logs confirm all
+five arithmetic tests, 9,222 legacy disagreements versus zero repaired
+disagreements in that complete cell, and the fixed RV32IM case. Its measurement
+identity is `2c8fd1f3a6711f0639685319fb25262b02bfecf4c6589c52cb58928270a46322`
+and verifier identity is
+`ebbf9d5cac596a718532b34798dc452e4050d6940594005c44f9a729c699c5a8`, matching
+the published contest environment. This hosted result confirms the scoped
+regression, not the 276 development performance measurements or whole-domain
+correctness. Provider artifact `15082399085` was independently downloaded;
+its SHA-256, ZIP CRC and all 11 member hashes were checked. Archive SHA-256:
+`c741430631882c284f12b07a6c7f4544b0e376e750c30ba2463400820db5176f`.
 
 ## Status, lineage and reuse
 
@@ -140,8 +150,10 @@ negative exp at fixed bytes; that target has not been achieved.
 All generated numerical candidates, rejected trials, raw reports, cell records
 and native comparisons are preserved in `Conjectures-numerical-continuation-20261126.zip`.
 Archive SHA-256:
-`41dd6b49532e1ebd27a7488a96e46ffa9bd732659ad1d89b2425041c5670cdf0`;
-3,062,312 bytes. CRC and all 390 payload hashes were checked. Source code,
+`d18dc6becf9378a8113f5fb217afbe1a12d9140d864076892e98288a9f11c4e7`;
+3,376,842 bytes. CRC and all 395 payload hashes were checked. Version 1 adds
+the independent hosted evidence; version 0 is retained as earlier lineage.
+Source code,
 tests and this report are kept in Git; generated evidence stays outside it.
 
 No registration, payment or contest submission occurred.
