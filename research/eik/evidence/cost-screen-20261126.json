@@ -1,0 +1,59 @@
+{
+  "state": "NAMED_OBSTRUCTION",
+  "name": "NO_COST_GAIN_IN_23_TARGETED_VARIANTS",
+  "candidate_count": 23,
+  "candidate_scored_checks_passed": 23,
+  "controls": 2,
+  "heldout_used": false,
+  "new_exhaustive_qualification_run": false,
+  "unit_tests_passed": 5,
+  "profile_native_reference_checks": 12900,
+  "counterfactual_hosted_input": {
+    "state": "NAMED_OBSTRUCTION",
+    "name": "FRAME_ONLY_SCOPE_TOO_SMALL_AT_FIXED_BYTES",
+    "control_sha256": "802b870e291d9764249e17990e67008da3c44a8afc2aa3d323c9c6372423d875",
+    "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+    "seed": 150897616,
+    "fingerprint": {
+      "verifier": "ebbf9d5cac596a718532b34798dc452e4050d6940594005c44f9a729c699c5a8",
+      "measurement": "2c8fd1f3a6711f0639685319fb25262b02bfecf4c6589c52cb58928270a46322",
+      "sandbox": "none"
+    },
+    "fixed_bytes": 20119,
+    "recorded_champion_S": 39.30415089582157,
+    "recorded_bar": 38.125026368946926,
+    "boundary": "Counterfactual savings from every call on the recorded draw, fixed code/table bytes; not a future-draw takeover verdict",
+    "models": [
+      {
+        "saving_every_call": 0,
+        "hypothetical_S": 41.83780964500286,
+        "clears_recorded_bar": false
+      },
+      {
+        "saving_every_call": 1,
+        "hypothetical_S": 40.62280136692226,
+        "clears_recorded_bar": false
+      },
+      {
+        "saving_every_call": 2,
+        "hypothetical_S": 39.40213690330864,
+        "clears_recorded_bar": false
+      },
+      {
+        "saving_every_call": 3,
+        "hypothetical_S": 38.17500791967637,
+        "clears_recorded_bar": false
+      }
+    ]
+  },
+  "archive": {
+    "filename": "Conjectures-numerical-continuation-20261126.zip",
+    "bytes": 5424357,
+    "sha256": "fd3d9ade8d2ea0cdee6cb6c835651a6e574d75b91a1862ca948a312445008437",
+    "verified_members": 460,
+    "previous_sha256": "d18dc6becf9378a8113f5fb217afbe1a12d9140d864076892e98288a9f11c4e7",
+    "new_candidate_count": 23,
+    "tests_passed": 5
+  },
+  "lineage_parent": "32251e09577a7077cfacad85ffde701d0483fa6c"
+}
