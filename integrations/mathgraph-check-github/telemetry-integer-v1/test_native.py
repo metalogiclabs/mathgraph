@@ -1,7 +1,8 @@
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from corpus import cases, same_value
+from unittest.mock import patch
+from corpus import Case, cases, same_value
 from native import load_accessor, observe, UnavailableConfigParser
 
 
@@ -46,6 +47,18 @@ class NumericContractTests(unittest.TestCase):
         def broken(*_): raise OSError('apparatus unavailable')
         with self.assertRaisesRegex(RuntimeError, 'UNEXPECTED_NATIVE_EXCEPTION'):
             observe(broken)
+
+    def test_mutating_input_cannot_change_the_expected_array(self):
+        original = [2**53+1]
+        case = Case('alias-control', 'integer_identity', 'INT', True, original, original)
+        def mutate(value, _item):
+            value[0] = 0
+            return value
+        with patch('native.cases', return_value=[case]):
+            row = observe(mutate)[0]
+        self.assertFalse(row['passed'])
+        self.assertEqual(original, [2**53+1])
+        self.assertEqual(row['expected_repr'], '[9007199254740993]')
 
 
 if __name__ == '__main__': unittest.main()

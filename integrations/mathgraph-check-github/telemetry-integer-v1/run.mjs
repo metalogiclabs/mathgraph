@@ -66,21 +66,27 @@ export async function runNumerical(options){
  const r={schema:'mathgraph.telemetry-integer-check.v1',profile:PROFILE,status:'UNKNOWN',permission:'ADVISORY_ONLY',
   scope:SCOPE,obligation:'Preserve the exact integer value and integer type for the 64-bit INT/UINT scalar and array forms in the fixed corpus; preserve its declared fractional/None compatibility and invalid-input refusals.',
   requirement_authority:'OPERATOR_SELECTED_FINITE_EXPECTATIONS; MISSION_AUTHORITY_NOT_ESTABLISHED',
-  method,subjects:{},cost:{model_calls:0,native_processes:0,wall_seconds:0,human_effort:'NOT_RUN',comparative_value:'NOT_RUN'}};
+  method,subjects:{},cost:{model_calls:0,native_attempts:0,native_processes:0,wall_seconds:0,human_effort:'NOT_RUN',comparative_value:'NOT_RUN'}};
  let repo;
  try{repo=await realpath(options.repo);}catch{r.reason='LOCAL_REPOSITORY_UNAVAILABLE';}
+ const sources={};
+ for(const side of ['base','head'])try{
+  if(!repo)throw Error(r.reason);
+  sources[side]=await sourceAt(repo,options[side]);r.subjects[side]=sources[side].identity;
+ }catch(e){r[side]={complete:false,reason:e.message};}
  for(const side of ['base','head']){
   const folder=join(out,side);await mkdir(folder);
+  if(!sources[side])continue;
   try{
-   if(!repo)throw Error(r.reason);
-   const source=await sourceAt(repo,options[side]);r.subjects[side]=source.identity;
+   const source=sources[side];
    const source_file=join(folder,'accessor.py');await writeFile(source_file,source.bytes);
    const request=join(folder,'request.json'),receipt=join(folder,'native.json');
    await writeFile(request,json({source_file,source_sha256:source.identity.source_sha256}));
-   r.cost.native_processes++;
+   r.cost.native_attempts++;
    const p=spawnSync(options.python??'python3',['-I','-S','-B',join(HERE,'native.py'),request,receipt],
     {encoding:'utf8',timeout:(options.timeout??120)*1000,maxBuffer:1024*1024,
      env:{PATH:process.env.PATH,LANG:'C.UTF-8'}});
+   if(p.pid>0)r.cost.native_processes++;
    await writeFile(join(folder,'driver.log'),(p.stdout??'')+(p.stderr??''));
    if(p.error||p.status!==0)throw Error('NATIVE_EXECUTION_INCOMPLETE: '+(p.error?.code??'exit '+p.status));
    r[side]=validateNative(JSON.parse(await readFile(receipt,'utf8')),source.identity);

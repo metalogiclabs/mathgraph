@@ -4,6 +4,7 @@ Reviewed local source only. This is not a hostile-source sandbox, package replay
 packet-path qualification or proof of all integer conversions.
 """
 import ast
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -52,7 +53,9 @@ def observe(convert):
                'input_repr': repr(case.value), 'expected_repr': repr(case.expected),
                'expected_error': case.error.__name__ if case.error else None}
         try:
-            actual = convert(case.value, item)
+            # A target may mutate an input array. Its expected value must not
+            # alias that array, or the target could change its own oracle.
+            actual = convert(deepcopy(case.value), item)
             row.update(actual_repr=repr(actual), actual_type=type(actual).__name__,
                        passed=case.error is None and same_value(actual, case.expected))
         except Exception as error:
