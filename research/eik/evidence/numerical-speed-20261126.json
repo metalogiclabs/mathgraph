@@ -96,6 +96,172 @@
       "champion_S_on_same_published_seed": 28.183514615086768,
       "takeover_S": 27.338009176634163,
       "fingerprint": {
+        "verifier": "ebbf9d5cac596a718532b34798dc452e4050d6940594005c44f9a729c699c5a8",
+        "measurement": "2c8fd1f3a6711f0639685319fb25262b02bfecf4c6589c52cb58928270a46322",
+        "sandbox": "none"
+      },
+      "fixed_code_and_table_bytes": 19272,
+      "boundary": "Counterfactual changes to instruction counts in the declared complete mathematical region; code/table bytes fixed. No optimized program or future-draw prediction is claimed.",
+      "regions": [
+        {
+          "region": "tanh-small-changed-family",
+          "zero_cost_score": 27.655564503501935,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 28.727848235627484,
+            "0.5": 28.389041981419716,
+            "1.0": 27.655564503501935
+          }
+        },
+        {
+          "region": "tanh-central",
+          "zero_cost_score": 24.33569096712742,
+          "minimum_region_instruction_cut_to_bar": 0.42006085536377213,
+          "scores_by_fraction_cut": {
+            "0.25": 28.06517474630333,
+            "0.5": 26.97738847280036,
+            "1.0": 24.33569096712742
+          }
+        },
+        {
+          "region": "tanh-large",
+          "zero_cost_score": 26.038418160039736,
+          "minimum_region_instruction_cut_to_bar": 0.6124964004866342,
+          "scores_by_fraction_cut": {
+            "0.25": 28.391790218029705,
+            "0.5": 27.67916503738056,
+            "1.0": 26.038418160039736
+          }
+        },
+        {
+          "region": "sigmoid-central",
+          "zero_cost_score": 21.838821941949586,
+          "minimum_region_instruction_cut_to_bar": 0.33010632247714966,
+          "scores_by_fraction_cut": {
+            "0.25": 27.786063477555015,
+            "0.5": 26.296814963168462,
+            "1.0": 21.838821941949586
+          }
+        },
+        {
+          "region": "exp-negative-common",
+          "zero_cost_score": 21.702440908070752,
+          "minimum_region_instruction_cut_to_bar": 0.34075286303141183,
+          "scores_by_fraction_cut": {
+            "0.25": 27.834703339084406,
+            "0.5": 26.37069559147606,
+            "1.0": 21.702440908070752
+          }
+        },
+        {
+          "region": "exp-positive-common",
+          "zero_cost_score": 27.751510678700317,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 28.73807717277982,
+            "0.5": 28.41722824357115,
+            "1.0": 27.751510678700317
+          }
+        }
+      ]
+    },
+    "thumbv6m": {
+      "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+      "seed": 150897616,
+      "baseline_S": 41.83780964500286,
+      "champion_S_on_same_published_seed": 39.30415089582157,
+      "takeover_S": 38.125026368946926,
+      "fingerprint": {
+        "verifier": "ebbf9d5cac596a718532b34798dc452e4050d6940594005c44f9a729c699c5a8",
+        "measurement": "2c8fd1f3a6711f0639685319fb25262b02bfecf4c6589c52cb58928270a46322",
+        "sandbox": "none"
+      },
+      "fixed_code_and_table_bytes": 20119,
+      "boundary": "Counterfactual changes to instruction counts in the declared complete mathematical region; code/table bytes fixed. No optimized program or future-draw prediction is claimed.",
+      "regions": [
+        {
+          "region": "tanh-small-changed-family",
+          "zero_cost_score": 40.09101779090941,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 41.4289436481301,
+            "0.5": 41.003164240306376,
+            "1.0": 40.09101779090941
+          }
+        },
+        {
+          "region": "tanh-central",
+          "zero_cost_score": 34.45850233049002,
+          "minimum_region_instruction_cut_to_bar": 0.5678593846323565,
+          "scores_by_fraction_cut": {
+            "0.25": 40.311727508532165,
+            "0.5": 38.61983143273212,
+            "1.0": 34.45850233049002
+          }
+        },
+        {
+          "region": "tanh-large",
+          "zero_cost_score": 37.68287035576634,
+          "minimum_region_instruction_cut_to_bar": 0.9093734945345204,
+          "scores_by_fraction_cut": {
+            "0.25": 40.92125401658165,
+            "0.5": 39.934992635492875,
+            "1.0": 37.68287035576634
+          }
+        },
+        {
+          "region": "sigmoid-central",
+          "zero_cost_score": 31.928655614142095,
+          "minimum_region_instruction_cut_to_bar": 0.485636808016352,
+          "scores_by_fraction_cut": {
+            "0.25": 40.06752337314035,
+            "0.5": 37.995235970473786,
+            "1.0": 31.928655614142095
+          }
+        },
+        {
+          "region": "exp-negative-common",
+          "zero_cost_score": 29.991578470066933,
+          "minimum_region_instruction_cut_to_bar": 0.45896493009331607,
+          "scores_by_fraction_cut": {
+            "0.25": 39.980606830074315,
+            "0.5": 37.71556891153848,
+            "1.0": 29.991578470066933
+          }
+        },
+        {
+          "region": "exp-positive-common",
+          "zero_cost_score": 40.4783305210717,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 41.5068252966035,
+            "0.5": 41.170091970370706,
+            "1.0": 40.4783305210717
+          }
+        }
+      ]
+    }
+  },
+  "artifact": {
+    "filename": "Conjectures-numerical-speed-trial-20261126.zip",
+    "sha256": "8d4e5e270bad0b3e39390535e95746ec873ea76ce3180bfb781044c079a24033",
+    "bytes": 587301,
+    "zip_crc_verified": true
+  },
+  "reproducer_sha256": {
+    "research/eik/fused_quadratic.py": "3474e6633ab5dde92205c8352d3b34a652b6235d14e86d2f4295a4262f178b62",
+    "research/eik/test_fused_quadratic.py": "7b09d110de3150a0268cc797858f74ed3542e4983e9b77784545f37f3677b62a",
+    "research/eik/fused_quadratic_diff.c": "79d2fc09245d0cfe0d91b55612cb49233a4a672c8dbdc876348d2021667ea8fb",
+    "research/eik/region_budget.py": "a5cc7a0d2ff3189e0ee373f04afbeeb07771c2fd2e4b4fab7927bcf1abadda47"
+  },
+  "local_region_budget": {
+    "rv32im": {
+      "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+      "seed": 1284956104,
+      "baseline_S": 29.051537885810436,
+      "champion_S_on_same_published_seed": 28.183514615086768,
+      "takeover_S": 27.338009176634163,
+      "fingerprint": {
         "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc",
         "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
         "sandbox": "none"
@@ -242,16 +408,16 @@
       ]
     }
   },
-  "artifact": {
-    "filename": "Conjectures-numerical-speed-trial-20261126.zip",
-    "sha256": "8e11fc6c76753a8683a63c72e46c0c1fa58feeff26d63b44f4a9595d39fc3ff9",
-    "bytes": 582561,
-    "zip_crc_verified": true
-  },
-  "reproducer_sha256": {
-    "research/eik/fused_quadratic.py": "3474e6633ab5dde92205c8352d3b34a652b6235d14e86d2f4295a4262f178b62",
-    "research/eik/test_fused_quadratic.py": "7b09d110de3150a0268cc797858f74ed3542e4983e9b77784545f37f3677b62a",
-    "research/eik/fused_quadratic_diff.c": "79d2fc09245d0cfe0d91b55612cb49233a4a672c8dbdc876348d2021667ea8fb",
-    "research/eik/region_budget.py": "a5cc7a0d2ff3189e0ee373f04afbeeb07771c2fd2e4b4fab7927bcf1abadda47"
+  "hosted_budget_replay": {
+    "run_id": 45738054604,
+    "source_commit": "afdf39fac7a85a6d1468d74d612513774b8c184d",
+    "artifact_id": 15080290926,
+    "provider_archive_sha256": "e4d3a1fb4c6f99f939d4eefa251e6f6c6a896bb8dfb935e61d11b908be837926",
+    "provider_sha256_verified": true,
+    "zip_crc_verified": true,
+    "internal_file_hashes_verified": 4,
+    "official_measurement_fingerprint_verified": true,
+    "official_verifier_fingerprint_verified": true,
+    "local_model_agreement_verified": true
   }
 }

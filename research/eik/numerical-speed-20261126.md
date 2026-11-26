@@ -67,6 +67,18 @@ published seed: 1284956104 for RV32IM #52 and 150897616 for ARM #53. The score
 model's unmodified result is independently reconstructed from individual
 instruction counts and asserted equal to the official kit's report.
 
+Independent hosted [run 45738054604](https://github.com/metalogiclabs/mathgraph/actions/runs/45738054604)
+passed at source `afdf39fac7a85a6d1468d74d612513774b8c184d`. The budget replay's
+measurement fingerprint is `2c8fd1f3a6711f0639685319fb25262b02bfecf4c6589c52cb58928270a46322`,
+and its verifier fingerprint is
+`ebbf9d5cac596a718532b34798dc452e4050d6940594005c44f9a729c699c5a8`,
+matching the published contest environment. Both budgets exactly reproduce the
+local calculation. Provider archive `15080290926` was independently hash/CRC
+verified, including four file hashes; ZIP SHA-256:
+`e4d3a1fb4c6f99f939d4eefa251e6f6c6a896bb8dfb935e61d11b908be837926`.
+This hosted replay qualifies the conditional budget calculation and guard tests;
+it does not repeat the six native candidate comparisons.
+
 For the experiment below, all instruction counts outside the named family and
 all code/table bytes remain fixed. A zero-cost family is a counterfactual lower
 bound, not an implemented kernel or prediction for a future draw.
