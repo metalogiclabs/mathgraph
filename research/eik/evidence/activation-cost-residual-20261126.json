@@ -1,0 +1,96 @@
+{
+  "state": "NAMED_OBSTRUCTION",
+  "name": "NO_GATE_CLEAR_IN_COLD_SHARING_AND_ARM_MARGINALS",
+  "arm_variants": 112,
+  "arm_best": {
+    "name": "tanh-18-1",
+    "source_sha256": "48939be032050fa5d548071d2697fd4269ba9d23f8dbdab99d4af97ffb20cd7d",
+    "report_sha256": "67e26375b9fa9e6856c5b80e87667e55972e8679d0561002fec7f8d0d0820c7b",
+    "S": 41.82727513748367,
+    "bytes": 20119
+  },
+  "arm_control_S": 41.83780964500286,
+  "arm_best_gain": 0.00025179395404717475,
+  "minimum_training_gain": 0.005,
+  "heldout_used": false,
+  "source_reconstructions": 112,
+  "cold_variants": [
+    {
+      "name": "th-no-inline",
+      "source_sha256": "a07b7eb02b82967c85c1f67ccfdf7486e3ad46222a36c5c8cfb6fbcb72180af8",
+      "report_sha256": "2edf9c91064bc974542f9292ecce72c73b1faa3eaebdcea50a72592277af35df",
+      "S": 29.051537885810436,
+      "bytes": 19272
+    },
+    {
+      "name": "th-tail",
+      "source_sha256": "e7c7d29a1fe34c47c009dd1476827a972babd0436b0a6d34fe9690753fc7be89",
+      "report_sha256": "928cdd21a5dccaa075a93b74c6b9d6f284f7458b834ebe4feb18c5239c1ee63c",
+      "S": 29.051537885810436,
+      "bytes": 19272
+    },
+    {
+      "name": "th-tail-inline",
+      "source_sha256": "9c3dbddc304a88ccefb2a3c981bb235cac75cb1716e940e0e2325ef3d20220b8",
+      "report_sha256": "bcc6ddd7cb65610a434fea198ced2a711264a238bcba70378855a78009fb8d2a",
+      "S": 29.051537885810436,
+      "bytes": 19272
+    },
+    {
+      "name": "th-tail-guards",
+      "source_sha256": "80bf8298c9a0b790e3af9dad8fe831f6d3dd29369a478f2d42dd8620d0ca6532",
+      "report_sha256": "049a57e0b5ac5e917172b5b5436cd3232105a75523d582bd4e6445605fe072a2",
+      "S": 29.050852764584832,
+      "bytes": 19268
+    },
+    {
+      "name": "res-tail",
+      "source_sha256": "02218ec9fadd66214c71bb090306a04ce83f251bf034ebcf441c5ff7106e69ea",
+      "report_sha256": "698a13ae50b0f8c25f99aa0a8a4aa36472af4808e3a2ad1bb0aacfeddfd0970b",
+      "S": 29.120430894069536,
+      "bytes": 19332
+    },
+    {
+      "name": "both-tail",
+      "source_sha256": "de0cc99e67fedbf95c5239b7f6d830a8cdcccd39e47327c1155ca8317bf44cdb",
+      "report_sha256": "0ea385d189bd8803a0f984656fe011505dd3dae33959012c5f5781c2ebcf45d4",
+      "S": 29.120430894069536,
+      "bytes": 19332
+    },
+    {
+      "name": "both-tail-guards",
+      "source_sha256": "95f31ffba4d12ca64397e8646315f36c162380b28cacf4d4a7f6f6c3645d15c0",
+      "report_sha256": "5c000643ebacba1e414b9cc304fd861b534c201dc416621a9ccbc875d8742a39",
+      "S": 29.11974463366447,
+      "bytes": 19328
+    },
+    {
+      "name": "unified",
+      "source_sha256": "8bfedadebd1014d08209f7e67f1ce0e9b4a62751d8817f73b86ba728d06ebd55",
+      "report_sha256": "ba8cc31640e5da57d5e571c3b5b10ca6d95c6049796a6e32dbcc911d48a0c6ec",
+      "S": 30.20269884470345,
+      "bytes": 19124
+    },
+    {
+      "name": "unified-guards",
+      "source_sha256": "43038f755287aa925317a0ca4bef46b24a43d2f7564270a8fc97bd9a39eba810",
+      "report_sha256": "d3ce2b6b5e8df0960eedf23f16d782dca15278186a2b1f5ae99a91837873ab35",
+      "S": 30.201985330514784,
+      "bytes": 19120
+    }
+  ],
+  "archive": {
+    "filename": "Conjectures-numerical-continuation-20261126.zip",
+    "bytes": 6316620,
+    "sha256": "acb6ced524e41527009517e2e8f462f16c69ff0abd1b45da5ef9edc2ca1f076b",
+    "verified_members": 601,
+    "previous_sha256": "fd3d9ade8d2ea0cdee6cb6c835651a6e574d75b91a1862ca948a312445008437",
+    "new_cold_candidates": 9,
+    "new_arm_marginal_candidates": 112,
+    "tests_passed": 4,
+    "heldout_used": false
+  },
+  "unit_tests_passed": 4,
+  "parent_commit": "de380676777becdd6e509d65c9f280267a3961b6",
+  "common_budget_boundary": "Local planning model only; no new contender or hosted qualification"
+}
