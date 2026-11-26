@@ -1,0 +1,45 @@
+name: EIK host to target sanitizer boundary controls
+on:
+  push:
+    branches: [research/eik-cell-entry-20261126]
+    paths: ['.github/workflows/eik-abi-boundary-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  boundary-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-public-frontier-20261126
+          run-id: 45729980897
+          github-token: ${{ github.token }}
+          path: published-fixture
+      - name: Pin evaluator and publicly released fixture
+        run: |
+          set -euo pipefail
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          echo '8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37  published-fixture/sources/entry49.c' | sha256sum -c -
+          python -m pip install --require-hashes -r kit/requirements.txt
+          (cd kit && python -m eik setup)
+      - name: Execute faulty, unmodified, and repaired controls
+        env:
+          EIK_THREADS: '1'
+        run: |
+          python research/eik/abi_sanitizer_boundary.py \
+            --kit kit --control published-fixture/sources/entry49.c \
+            --out boundary-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-abi-boundary-controls-20261126
+          path: boundary-evidence/
+          if-no-files-found: error
