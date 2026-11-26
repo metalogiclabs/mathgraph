@@ -52,6 +52,19 @@ sound host-to-target correspondence argument, or target-specific instrumentation
 with a precisely declared coverage boundary. Additional host input coverage
 alone does not discharge that obligation.
 
+## Independent qualification
+
+Hosted run [45732700953](https://github.com/metalogiclabs/mathgraph/actions/runs/45732700953)
+passed all **25/25** declared checks at source commit
+`63d45b4c68cd1fa9a7250cf40588991b4b260f8b`. The hosted verifier and measurement
+fingerprints match the previously used official environment. Artifact
+`15076629735` was independently downloaded; its provider SHA-256, ZIP CRC, and
+all 37 file hashes were verified. Archive SHA-256:
+`7262627c41aca79440c9b723e7df7f2f797657e10ac53d1672a40060ff392964`.
+The small receipt is `evidence/abi-boundary-20261126.json`. The boundary remains
+the declared experiment, including a partial host range, rather than full-domain
+qualification of the deliberately faulty source.
+
 ## Replay
 
 Use the kit's hash-pinned dependencies, then run:
