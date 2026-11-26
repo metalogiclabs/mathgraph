@@ -5,6 +5,12 @@ revisions and writes an outcome for every prompt in the canonical catalogue.
 All five profiles run by default, including when an earlier profile reports a
 discrepancy or cannot complete.
 
+The isolated [local pilot candidate](../../../docs/releases/check-local-pilot-20261126.md)
+adds one operator entry point for this unchanged dispatcher and a separately
+scoped telemetry integer profile. Use `node bin/mathgraph-check.mjs --capabilities`
+from the repository root to inspect those supported scopes. The existing direct
+command below remains available; neither route expands whole-family coverage.
+
 ```bash
 node integrations/mathgraph-check-github/catalogue-check-v1/run.mjs \
   --repo /path/to/local/L4YAML \
