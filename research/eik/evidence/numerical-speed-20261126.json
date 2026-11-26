@@ -1,0 +1,257 @@
+{
+  "experiment": "six bounded numerical kernel speed trials",
+  "evaluator_commit": "5a32428ad4aa23bce737d50a738ace24ddeeed2e",
+  "published_control_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+  "status": "REJECTED",
+  "verification_boundary": {
+    "objective": "Find an exact integer kernel that clears a contest takeover score",
+    "status": "WARRANTED_BOUNDED_PERFORMANCE_REJECTION",
+    "control_ARM_S": 41.498845233661655,
+    "seed": 1284956104,
+    "fingerprint": {
+      "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc",
+      "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
+      "sandbox": "none"
+    },
+    "results": [
+      {
+        "variant": "plain",
+        "source_sha256": "80c202a36552321263bc546cf022f9ee950834d595e51c5bd426cd999147b8dd",
+        "ARM_S": 42.6843184444272,
+        "relative_change": 0.02856641441685115,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      },
+      {
+        "variant": "likely",
+        "source_sha256": "b9c0d1c9cb937c2c5704864cbfc42c067eedec3588c941a4c33a8ae237feccc3",
+        "ARM_S": 42.72821389683355,
+        "relative_change": 0.029624165594243967,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      },
+      {
+        "variant": "helper",
+        "source_sha256": "45c8fc263acfe2f5a74f755392b74053d87c0a024cdcf80d557ac1c48ad2fe91",
+        "ARM_S": 42.99070899249811,
+        "relative_change": 0.035949524629816265,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      },
+      {
+        "variant": "helper-likely",
+        "source_sha256": "e3d123cf745f1625c600d1e3a7cd034ec0c42a78098d55094791a93a54889e0a",
+        "ARM_S": 42.97733195880672,
+        "relative_change": 0.03562717749904509,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      },
+      {
+        "variant": "plain-recompute",
+        "source_sha256": "198e3f8a530f0793c4da9c8ac1a98eb18b43f7694ee09fa4a86a2fe323259a9a",
+        "ARM_S": 41.76698175357104,
+        "relative_change": 0.006461300751855248,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      },
+      {
+        "variant": "biased",
+        "source_sha256": "8e80a6c6527e2ebf9aa493ccf116b2ff2a167a0886a754c772caf5ef060051ab",
+        "ARM_S": 41.68805462504011,
+        "relative_change": 0.004559389311030282,
+        "differential": {
+          "words_checked": 67108864,
+          "mismatches": 0
+        },
+        "decision": "REJECTED_PERFORMANCE"
+      }
+    ],
+    "differential_comparisons": 402653184,
+    "full_domain_qualification": false,
+    "eligible_for_qualification": [],
+    "region_budget_boundary": "Code/table bytes and other regions held fixed; champion-specific published seeds. Counterfactual zero-cost regions are not implemented kernels.",
+    "registration_sent": false,
+    "entry_submitted": false
+  },
+  "region_budget": {
+    "rv32im": {
+      "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+      "seed": 1284956104,
+      "baseline_S": 29.051537885810436,
+      "champion_S_on_same_published_seed": 28.183514615086768,
+      "takeover_S": 27.338009176634163,
+      "fingerprint": {
+        "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc",
+        "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
+        "sandbox": "none"
+      },
+      "fixed_code_and_table_bytes": 19272,
+      "boundary": "Counterfactual changes to instruction counts in the declared complete mathematical region; code/table bytes fixed. No optimized program or future-draw prediction is claimed.",
+      "regions": [
+        {
+          "region": "tanh-small-changed-family",
+          "zero_cost_score": 27.655564503501935,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 28.727848235627484,
+            "0.5": 28.389041981419716,
+            "1.0": 27.655564503501935
+          }
+        },
+        {
+          "region": "tanh-central",
+          "zero_cost_score": 24.33569096712742,
+          "minimum_region_instruction_cut_to_bar": 0.42006085536377213,
+          "scores_by_fraction_cut": {
+            "0.25": 28.06517474630333,
+            "0.5": 26.97738847280036,
+            "1.0": 24.33569096712742
+          }
+        },
+        {
+          "region": "tanh-large",
+          "zero_cost_score": 26.038418160039736,
+          "minimum_region_instruction_cut_to_bar": 0.6124964004866342,
+          "scores_by_fraction_cut": {
+            "0.25": 28.391790218029705,
+            "0.5": 27.67916503738056,
+            "1.0": 26.038418160039736
+          }
+        },
+        {
+          "region": "sigmoid-central",
+          "zero_cost_score": 21.838821941949586,
+          "minimum_region_instruction_cut_to_bar": 0.33010632247714966,
+          "scores_by_fraction_cut": {
+            "0.25": 27.786063477555015,
+            "0.5": 26.296814963168462,
+            "1.0": 21.838821941949586
+          }
+        },
+        {
+          "region": "exp-negative-common",
+          "zero_cost_score": 21.702440908070752,
+          "minimum_region_instruction_cut_to_bar": 0.34075286303141183,
+          "scores_by_fraction_cut": {
+            "0.25": 27.834703339084406,
+            "0.5": 26.37069559147606,
+            "1.0": 21.702440908070752
+          }
+        },
+        {
+          "region": "exp-positive-common",
+          "zero_cost_score": 27.751510678700317,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 28.73807717277982,
+            "0.5": 28.41722824357115,
+            "1.0": 27.751510678700317
+          }
+        }
+      ]
+    },
+    "thumbv6m": {
+      "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+      "seed": 150897616,
+      "baseline_S": 41.83780964500286,
+      "champion_S_on_same_published_seed": 39.30415089582157,
+      "takeover_S": 38.125026368946926,
+      "fingerprint": {
+        "verifier": "28aad95db9f25d33eabaf31a8c6fc0b8d5070aa087f962da4972d5ca16a718fc",
+        "measurement": "d3c13044e510324fe01259f6804ebd749f4217c5e3fb57cb5fb91d8d4e1213c2",
+        "sandbox": "none"
+      },
+      "fixed_code_and_table_bytes": 20119,
+      "boundary": "Counterfactual changes to instruction counts in the declared complete mathematical region; code/table bytes fixed. No optimized program or future-draw prediction is claimed.",
+      "regions": [
+        {
+          "region": "tanh-small-changed-family",
+          "zero_cost_score": 40.09101779090941,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 41.4289436481301,
+            "0.5": 41.003164240306376,
+            "1.0": 40.09101779090941
+          }
+        },
+        {
+          "region": "tanh-central",
+          "zero_cost_score": 34.45850233049002,
+          "minimum_region_instruction_cut_to_bar": 0.5678593846323565,
+          "scores_by_fraction_cut": {
+            "0.25": 40.311727508532165,
+            "0.5": 38.61983143273212,
+            "1.0": 34.45850233049002
+          }
+        },
+        {
+          "region": "tanh-large",
+          "zero_cost_score": 37.68287035576634,
+          "minimum_region_instruction_cut_to_bar": 0.9093734945345204,
+          "scores_by_fraction_cut": {
+            "0.25": 40.92125401658165,
+            "0.5": 39.934992635492875,
+            "1.0": 37.68287035576634
+          }
+        },
+        {
+          "region": "sigmoid-central",
+          "zero_cost_score": 31.928655614142095,
+          "minimum_region_instruction_cut_to_bar": 0.485636808016352,
+          "scores_by_fraction_cut": {
+            "0.25": 40.06752337314035,
+            "0.5": 37.995235970473786,
+            "1.0": 31.928655614142095
+          }
+        },
+        {
+          "region": "exp-negative-common",
+          "zero_cost_score": 29.991578470066933,
+          "minimum_region_instruction_cut_to_bar": 0.45896493009331607,
+          "scores_by_fraction_cut": {
+            "0.25": 39.980606830074315,
+            "0.5": 37.71556891153848,
+            "1.0": 29.991578470066933
+          }
+        },
+        {
+          "region": "exp-positive-common",
+          "zero_cost_score": 40.4783305210717,
+          "minimum_region_instruction_cut_to_bar": null,
+          "scores_by_fraction_cut": {
+            "0.25": 41.5068252966035,
+            "0.5": 41.170091970370706,
+            "1.0": 40.4783305210717
+          }
+        }
+      ]
+    }
+  },
+  "artifact": {
+    "filename": "Conjectures-numerical-speed-trial-20261126.zip",
+    "sha256": "8e11fc6c76753a8683a63c72e46c0c1fa58feeff26d63b44f4a9595d39fc3ff9",
+    "bytes": 582561,
+    "zip_crc_verified": true
+  },
+  "reproducer_sha256": {
+    "research/eik/fused_quadratic.py": "3474e6633ab5dde92205c8352d3b34a652b6235d14e86d2f4295a4262f178b62",
+    "research/eik/test_fused_quadratic.py": "7b09d110de3150a0268cc797858f74ed3542e4983e9b77784545f37f3677b62a",
+    "research/eik/fused_quadratic_diff.c": "79d2fc09245d0cfe0d91b55612cb49233a4a672c8dbdc876348d2021667ea8fb",
+    "research/eik/region_budget.py": "a5cc7a0d2ff3189e0ee373f04afbeeb07771c2fd2e4b4fab7927bcf1abadda47"
+  }
+}

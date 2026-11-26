@@ -1,0 +1,54 @@
+name: EIK numerical instruction budget
+on:
+  push:
+    branches: [research/eik-cell-entry-20261126]
+    paths: ['.github/workflows/eik-numerical-budget-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  score-budget:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-public-frontier-20261126
+          run-id: 45729980897
+          github-token: ${{ github.token }}
+          path: published-fixture
+      - name: Pin the evaluator and test the arithmetic guards
+        run: |
+          set -euo pipefail
+          (cd research/eik && python -m unittest test_fused_quadratic -v)
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          python -m pip install --require-hashes -r kit/requirements.txt
+          (cd kit && python -m eik setup)
+      - name: Calculate fixed-size budgets on the two published champion draws
+        env:
+          EIK_THREADS: '1'
+        run: |
+          python research/eik/region_budget.py --kit kit \
+            --source published-fixture/sources/entry49.c --out budget-evidence
+      - name: Preserve exact-source receipts
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,hashlib,json,os
+          p=pathlib.Path('budget-evidence');p.mkdir(exist_ok=True)
+          (p/'source-commit.txt').write_text(os.environ['GITHUB_SHA']+'\n')
+          m={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.rglob('*')) if f.is_file()}
+          (p/'SHA256SUMS.json').write_text(json.dumps(m,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-numerical-budget-20261126
+          path: budget-evidence/
+          if-no-files-found: error
