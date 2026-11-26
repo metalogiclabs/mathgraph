@@ -1,0 +1,88 @@
+name: EIK numerical continuation and public frontier
+on:
+  push:
+    branches: [research/eik-cell-entry-20261126]
+    paths: ['.github/workflows/eik-cell-entry-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test exact envelope identities and pin the official evaluator
+        run: |
+          set -euo pipefail
+          (cd research/eik && python -m unittest test_split_quadratic -v)
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir -p frontier-evidence/sources frontier-evidence/reports
+          git -C kit rev-parse HEAD > frontier-evidence/evaluator.sha
+          python -m pip install requests==2.34.2
+      - name: Query current boards and download only an explicitly published former champion
+        run: |
+          python - <<'PY'
+          import datetime,hashlib,json,pathlib,requests
+          base='https://conjectures.io/v1/competitions/exact-integer-kernels'
+          p=pathlib.Path('frontier-evidence')
+          audit={'queried_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'actions':'GET only; no wallet or submission','requests':{}}
+          def get(name,path):
+              r=requests.get(base+path,timeout=60)
+              audit['requests'][name]={'http_status':r.status_code,'path':path}
+              r.raise_for_status()
+              j=r.json();(p/'reports'/name).write_text(json.dumps(j,indent=2));return j
+          try:
+              boards=get('boards.json','/boards')
+              for b in ('rv32im','thumbv6m','overall'):
+                  get('leaderboard-'+b+'.json','/leaderboard?board='+b)
+              for n in (49,50,52,53,54):
+                  report=get('report-'+str(n)+'.json','/submissions/'+str(n)+'/report')
+                  if n!=49:continue
+                  item=report['submission']
+                  audit['entry49']={'source_available':item['source_available'],'official_sha256':item['source_sha256']}
+                  if not item['source_available']:
+                      audit['entry49']['status']='UNKNOWN_SOURCE_NOT_PUBLISHED';continue
+                  r=requests.get(base+'/submissions/49/source',timeout=60);r.raise_for_status()
+                  h=hashlib.sha256(r.content).hexdigest()
+                  assert h==item['source_sha256'] and len(r.content)<=262144
+                  assert all(('eik_'+fn).encode() in r.content for fn in ('sigmoid','tanh','exp'))
+                  (p/'sources/entry49.c').write_bytes(r.content)
+                  audit['entry49'].update(status='PUBLISHED_SOURCE_RECOVERED',download_sha256=h,source_bytes=len(r.content))
+          finally:
+              (p/'query-audit.json').write_text(json.dumps(audit,indent=2))
+              print(json.dumps(audit,indent=2))
+          PY
+      - name: Measure the published source with full official target samples
+        run: |
+          set -euo pipefail
+          if [ ! -f frontier-evidence/sources/entry49.c ]; then
+            echo 'No published source; no code was requested or inferred beyond the declared publication flag.'
+            exit 0
+          fi
+          python -m pip install --require-hashes -r kit/requirements.txt
+          cd kit
+          python -m eik setup
+          python -m eik gate ../frontier-evidence/sources/entry49.c --out ../frontier-evidence/gate49.json
+          python -m eik measure ../frontier-evidence/sources/entry49.c --seed 1284956104 --out ../frontier-evidence/entry49-matched.json
+          python -m eik measure ../frontier-evidence/sources/entry49.c --seed 739612807 --out ../frontier-evidence/entry49-fresh.json
+      - name: Preserve a manifest without making a competition claim
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path('frontier-evidence')
+          m={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.rglob('*')) if f.is_file()}
+          (p/'SHA256SUMS.json').write_text(json.dumps(m,indent=2))
+          print('Preserved',len(m),'files; no registration, signing, submission or payment.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-public-frontier-20261126
+          path: frontier-evidence/
+          if-no-files-found: error
