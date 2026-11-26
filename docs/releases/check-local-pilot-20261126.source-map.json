@@ -1,0 +1,28 @@
+{
+  "schema": "mathgraph.check-source-map.v1",
+  "observed_on": "2026-11-26",
+  "candidate": "local-pilot-20261126",
+  "candidate_base": "dd3369c772c77fb5dd5db1056cf7f13032525dfa",
+  "sources": {
+    "public_main": "1d317d909d1e72cfb780e53b302df8103d250e31",
+    "live_worker_annotation": "b3ff95df9bed186bdd173ded5e9a563a5322c9ed",
+    "selfserve_controller_pin": "28658f4232f6a0f0e5d86244edf5bf97936570f4",
+    "qualified_aerospace_rc1": "70733f1afab6eb3bcd1d66b32203a27c042a7759",
+    "retained_five_profile_head": "dd3369c772c77fb5dd5db1056cf7f13032525dfa"
+  },
+  "execution_paths": {
+    "local": "bin/mathgraph-check.mjs -> explicit retained L4YAML dispatcher or telemetry integer adapter",
+    "hosted": "main selfserve workflow -> pinned controller; this candidate does not repin it",
+    "live_monitor": "cloudflare/monitor-transition-v1.mjs; separate from the pure Monitor",
+    "pure_monitor": "check-resolve-monitor-v1.mjs; candidate base matches RC1 module and trust-boundary tests"
+  },
+  "openc3_calibration": {
+    "source_path": "openc3/python/openc3/accessors/accessor.py",
+    "original": "791b3492ed8d6a7f39bd240837fc601ac491278e",
+    "repaired": "429c784f7267ce6b8a0b03c90c213b397282644b",
+    "authority": "OpenC3/cosmos PR 4433; known-class calibration, not held-out discovery"
+  },
+  "deployment_changed": false,
+  "operator_use": "NOT_RUN",
+  "commercial_value": "UNKNOWN"
+}

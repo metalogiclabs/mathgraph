@@ -4,6 +4,14 @@ MathGraph is a research-stage **verification-aware mathematical knowledge networ
 
 **A source index is not an independent proof check.** Mathematical structure, historical verification, current applicability, and action authority remain separate.
 
+## MathGraph Check local pilot candidate
+
+Use `node bin/mathgraph-check.mjs --capabilities` to inspect the two explicit
+local scopes: the five retained L4YAML profiles and the bounded OpenC3 telemetry
+integer-identity profile. The [operator quickstart and boundaries](docs/releases/check-local-pilot-20261126.md)
+describe source pins, replay, refusal controls and external-pilot readiness.
+This isolated candidate does not update the hosted service or establish customer value.
+
 ## Start here (October 2026)
 
 - **[Explore the Mathlib source catalogue](https://mathgraph.org/explore/)** — a deliberately limited slice: 2,345 declaration occurrences across 13 pinned Mathlib v4.34.1 modules, with 3,571 structural relations (`DECLARES`, `TYPE_REFERENCES` and `IMPORTS_MODULE`). Source-location links and permanent object pages are available; these relations do **not** establish proof dependency, implication, equivalence, or independent checking.

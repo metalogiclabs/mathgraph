@@ -1,7 +1,7 @@
 name: Retained report check - native source reuse
 on:
   push:
-    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122, feat/check-catalogue-104-20261122, experiment/check-axiom-admission-v1]
+    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122, feat/check-catalogue-104-20261122, experiment/check-axiom-admission-v1, release/check-local-pilot-20261126]
   pull_request:
     paths:
       - integrations/mathgraph-check-github/pr-pilot-v1/**
@@ -11,6 +11,11 @@ on:
       - integrations/mathgraph-check-github/catalogue-check-v1/**
       - integrations/mathgraph-check-github/retained-suite-v1/**
       - experiments/check-catalogue-v1/**
+      - bin/mathgraph-check.mjs
+      - integrations/mathgraph-check-github/operator-entry.test.mjs
+      - integrations/mathgraph-check-github/telemetry-integer-v1/**
+      - experiments/check-local-release-v1/**
+      - docs/releases/check-local-pilot-20261126*
       - .github/workflows/check-retained-report-v1.yml
 permissions: {contents: read}
 jobs:
@@ -33,6 +38,28 @@ jobs:
           python3 -m unittest discover -s experiments/check-report-status-v1 -p 'test_*.py'
           python3 -m unittest discover -s experiments/check-catalogue-v1 -p 'test_*.py'
           python3 -m unittest discover -s integrations/mathgraph-check-github/retained-suite-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/telemetry-integer-v1 -p 'test_*.py'
+  operator:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Acquire the known telemetry calibration sources
+        run: |
+          git init telemetry-subject
+          git -C telemetry-subject remote add origin https://github.com/OpenC3/cosmos.git
+          git -C telemetry-subject fetch --filter=blob:none --no-tags --depth 1 origin 791b3492ed8d6a7f39bd240837fc601ac491278e 429c784f7267ce6b8a0b03c90c213b397282644b
+          git -C telemetry-subject show 791b3492ed8d6a7f39bd240837fc601ac491278e:openc3/python/openc3/accessors/accessor.py > /dev/null
+          git -C telemetry-subject show 429c784f7267ce6b8a0b03c90c213b397282644b:openc3/python/openc3/accessors/accessor.py > /dev/null
+      - name: Qualify the public entry on original, repair, withdrawal and refusal controls
+        run: python3 experiments/check-local-release-v1/qualify.py --repo telemetry-subject --out operator-qualification
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: operator-qualification, path: operator-qualification, retention-days: 30, include-hidden-files: true}
   native:
     needs: contracts
     runs-on: ubuntu-24.04
@@ -64,6 +91,21 @@ jobs:
         run: python3 experiments/check-report-status-v1/qualify.py --repo subject --out status-qualification --lean "$MATHGRAPH_LEAN_BIN"
       - name: All retained profiles with partial repair, combined repair, withdrawal and 104-prompt accounting
         run: python3 experiments/check-catalogue-v1/qualify.py --repo subject --out catalogue-qualification --lean "$MATHGRAPH_LEAN_BIN"
+      - name: Run the same operator entry over all five qualified L4YAML profiles
+        run: |
+          head_sha=$(python3 -c 'import json; print(json.load(open("catalogue-qualification/summary.json"))["combined_axiom_candidate"]["commit"])')
+          node bin/mathgraph-check.mjs --profile l4yaml-retained-v1 --repo subject --base 14eb6dbab845d2ac61f171a9ed61906d3f9ffb2f --head "$head_sha" --out l4yaml-operator-qualification --lean "$MATHGRAPH_LEAN_BIN"
+          python3 - <<'PY'
+          import json
+          r=json.load(open('l4yaml-operator-qualification/result.json'))
+          assert r['status']=='COMPLETED_BOUNDED_AGREEMENT'
+          assert r['release']['profile']=='l4yaml-retained-v1'
+          assert r['release']['tracked_entry_clean'] is True
+          assert r['profile_counts']=={'agreement':5,'discrepancy':0,'unknown':0,'not_run':0}
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: l4yaml-operator-qualification, path: l4yaml-operator-qualification, retention-days: 30, include-hidden-files: true}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: retained-report-qualification, path: qualification, retention-days: 30}
