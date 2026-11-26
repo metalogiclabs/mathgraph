@@ -1,0 +1,72 @@
+{
+  "schema": "eik-numerical-continuation-1",
+  "state": "NAMED_OBSTRUCTION",
+  "name": "NO_DEVELOPMENT_GAIN_AT_DECLARED_THRESHOLD",
+  "base_commit": "c9b84804506b24dd2565b2050f276876073652e0",
+  "baseline_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+  "evaluator_commit": "5a32428ad4aa23bce737d50a738ace24ddeeed2e",
+  "train_seed": 1284956104,
+  "heldout_seed_frozen": 318674905,
+  "heldout_run": false,
+  "minimum_training_gain": 0.005,
+  "candidate_measurements": 277,
+  "unique_candidate_sources": 276,
+  "candidates_passing_scored_checks": 275,
+  "candidates_rejected_outputs": 1,
+  "control": {
+    "report": "hot-path-hints/control-train.json",
+    "report_sha256": "740b844dd20f6f40f918f86b8f0cfa1307d58622087cb9cba34652ff83d079dc",
+    "source": "hot-path-hints/control.c",
+    "source_sha256": "8f8a23345b12abfe41040c6eca20ee06f4a4c50de69fbc6bdf8a9d758f129f37",
+    "verdict": "passed",
+    "S": 29.051537885810436,
+    "bytes": 19272
+  },
+  "best_training": {
+    "report": "hot-path-hints/exp+guards-train.json",
+    "report_sha256": "1057dbe55938032f45384ef626e92ba14f404a48a046388b9c018955f7af8ce1",
+    "source": "hot-path-hints/exp+guards.c",
+    "source_sha256": "f7aca22cd8d5e2a78e4ca462e415e8b317f9b3129d2306271a55ac388a91d72b",
+    "verdict": "passed",
+    "S": 29.047493283704924,
+    "bytes": 19260
+  },
+  "best_relative_gain": 0.0001392216178506267,
+  "generator_hash_reconstructions": 266,
+  "boundaries": [
+    "Local pinned evaluator; no all-input independent-reference qualification",
+    "No candidate met the training gate; heldout not consumed",
+    "No new competitive candidate promoted"
+  ],
+  "archive": {
+    "filename": "Conjectures-numerical-continuation-20261126.zip",
+    "bytes": 3062312,
+    "sha256": "41dd6b49532e1ebd27a7488a96e46ffa9bd732659ad1d89b2425041c5670cdf0",
+    "verified_members": 390,
+    "code_sha256": {
+      "research/eik/hot_path_hints.py": "4b4307bbbaec010791701261b1065946fd623b2d47fe6f36ba6dcf47c77c559f",
+      "research/eik/single_path_hints.py": "84d4dc0702b9cb2522be777ed787acaa3674671c3eb0f46b9f80fa5192989fbc",
+      "research/eik/direct_negative_sigmoid.py": "633e227bbe8adc4f77c4310edf76348862093eeaef44895f99fa579955991f83",
+      "research/eik/uniform_negative_exp.py": "ed05b61a4bf1f1e96d2a8e1c0007cad9ccf2812c0ac99c3da652fc1a51823bab",
+      "research/eik/synthesize_uniform_exp.py": "c1940dcfd1e3be969b3d21436fe3f642002c3555d80fbfaf5df539b75fcf17aa",
+      "research/eik/test_packed_residue.py": "358f2b0f6fe232c56486509b5eca486b83c6cbd8b50cdda87c2e00f6d973e989",
+      "research/eik/full_range_diff.c": "d9d74df8e264decfff09bbca2b6d84de992ecdb562274b753f7395a9755f9ec2",
+      "research/eik/fallback_phase_replay.py": "c5a8f5dc242e68ff508d5036831c15eeb377d3aa387902f5b39e2f1ef5382799",
+      "research/eik/sigmoid_tiers.py": "bbe3276229155f0fa0588ab7261ecc646cbc3ee983101b5a8ffef81203d8bb30"
+    }
+  },
+  "fallback_counterexample": {
+    "state": "FINITE_COUNTERMODEL",
+    "prototype_sha256": "5c301ea63a4770bcae416180b6ecd3f86c241788b27b757834911dc59d662174",
+    "input_word": "be92003a",
+    "control_word": "3f407c39",
+    "prototype_word": "3f407c38",
+    "native_words": 43515904,
+    "original_mismatches": 501990,
+    "repaired_mismatches": 0,
+    "fixed_rv32im_cases_replayed": 9,
+    "local_projected_cell_words": 131072,
+    "local_projected_old_mismatches": 9222,
+    "local_projected_repair_mismatches": 0
+  }
+}
