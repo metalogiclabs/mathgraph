@@ -6,7 +6,85 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
+  split-cell-trial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: eik-rrr-control
+          run-id: 45545248898
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Freeze the sources and test the numerical certificates
+        run: |
+          set -euo pipefail
+          (cd research/eik && python -m unittest test_split_quadratic -v)
+          git clone https://github.com/conjectures-io/exact-integer-kernels-miner.git kit
+          git -C kit checkout --detach 5a32428ad4aa23bce737d50a738ace24ddeeed2e
+          mkdir -p split-evidence
+          cp prior/candidate.c split-evidence/control.c
+          echo '3d9777afffd5aba80d52bf4926243aa3dbe1c1fa78b12f63ed597d634895e3b4  split-evidence/control.c' | sha256sum -c -
+          for v in tl2 tl4 ta2 ta2-compact both2 both4; do
+            python research/eik/split_quadratic.py split-evidence/control.c "split-evidence/$v.c" "$v" > "split-evidence/$v-certificate.json"
+          done
+          gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h split-evidence/control.c -o baseline.so
+          gcc -O2 research/eik/rv_diff.c -ldl -o diff
+          for v in tl2 tl4 ta2 ta2-compact both2 both4; do
+            gcc -std=c11 -O2 -fPIC -shared -fno-strict-aliasing -include kit/harness/eik.h "split-evidence/$v.c" -o candidate.so
+            ./diff "$PWD/baseline.so" "$PWD/candidate.so" > "split-evidence/$v-differential.txt"
+          done
+          python -m pip install --require-hashes -r kit/requirements.txt
+      - name: Measure matched and held-out input draws without selecting a winner by prose
+        run: |
+          set -euo pipefail
+          cd kit
+          python - <<'PY'
+          from pathlib import Path
+          from eik import stages as ST
+          import json,hashlib
+          p=Path('../split-evidence').resolve()
+          variants=['control','tl2','tl4','ta2','ta2-compact','both2','both4']
+          results={}
+          for v in variants:
+              reports=[]
+              for seed in [1284956104,739612807]:
+                  r=ST.measure(p/(v+'.c'),seed,targets=['rv32im'],sample=False)
+                  (p/(v+'-'+str(seed)+'.json')).write_text(json.dumps(r,indent=2))
+                  reports.append(r)
+                  if r['verdict']!='passed':break
+              results[v]={'sha256':hashlib.sha256((p/(v+'.c')).read_bytes()).hexdigest(),'verdicts':[r['verdict'] for r in reports],'scores':[r.get('scores',{}).get('rv32im',{}).get('S') for r in reports]}
+          base=results['control']['scores'];eligible=[]
+          for v in variants[1:]:
+              r=results[v]
+              if r['verdicts']!=['passed','passed']:continue
+              gain=min(1-r['scores'][i]/base[i] for i in [0,1]);r['minimum_paired_gain']=gain
+              if gain>=0.005:eligible.append(v)
+          d={'status':'BOUNDED_PAIRED_MEASUREMENT','boundary':'RV32IM scored inputs only; no new full-domain qualification','variants':results,'eligible_for_full_qualification':eligible,'registration_sent':False,'entry_submitted':False}
+          (p/'decision.json').write_text(json.dumps(d,indent=2));print(json.dumps(d,indent=2))
+          PY
+      - name: Preserve receipts and rejected candidates
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          p=Path('split-evidence')
+          m={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.rglob('*')) if f.is_file()}
+          (p/'SHA256SUMS.json').write_text(json.dumps(m,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eik-split-cell-trial-20261126
+          path: split-evidence/
+          if-no-files-found: error
   public-frontier:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
